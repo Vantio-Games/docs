@@ -36,7 +36,7 @@ Authorization: Bearer sk_your_secret_key_here
 <RequestExample>
 
 ```bash
-curl -X GET "http://localhost:3000/api/v1/earnings/earn_123abc" \
+curl -X GET "https://vantio.app/api/v1/earnings/earn_123abc" \
   -H "Authorization: Bearer sk_your_secret_key_here"
 ```
 
@@ -148,7 +148,7 @@ Before processing a payout, verify the earning status:
 ```javascript
 async function checkEarningStatus(earningId) {
   const response = await fetch(
-    `http://localhost:3000/api/v1/earnings/${earningId}`,
+    `https://vantio.app/api/v1/earnings/${earningId}`,
     {
       headers: {
         'Authorization': `Bearer ${API_KEY}`
@@ -178,7 +178,7 @@ async function EarningDetail({ earningId }) {
     async function fetchEarning() {
       try {
         const response = await fetch(
-          `http://localhost:3000/api/v1/earnings/${earningId}`,
+          `https://vantio.app/api/v1/earnings/${earningId}`,
           {
             headers: {
               'Authorization': `Bearer ${API_KEY}`

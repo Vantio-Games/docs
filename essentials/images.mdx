@@ -98,7 +98,7 @@ const fs = require('fs');
 const https = require('https');
 
 async function downloadQRCode(posterId, outputPath) {
-  const response = await fetch(`http://localhost:3000/api/v1/posters/${posterId}`, {
+  const response = await fetch(`https://vantio.app/api/v1/posters/${posterId}`, {
     headers: {
       'Authorization': `Bearer ${API_KEY}`
     }
@@ -128,7 +128,7 @@ const PDFDocument = require('pdfkit');
 const fetch = require('node-fetch');
 
 async function generatePosterPDF(posterId) {
-  const response = await fetch(`http://localhost:3000/api/v1/posters/${posterId}`, {
+  const response = await fetch(`https://vantio.app/api/v1/posters/${posterId}`, {
     headers: {
       'Authorization': `Bearer ${API_KEY}`
     }
@@ -197,7 +197,7 @@ Generate QR codes for multiple posters:
 ```javascript
 async function generateAllPosterQRCodes(programId) {
   const response = await fetch(
-    `http://localhost:3000/api/v1/posters?programId=${programId}`,
+    `https://vantio.app/api/v1/posters?programId=${programId}`,
     {
       headers: {
         'Authorization': `Bearer ${API_KEY}`

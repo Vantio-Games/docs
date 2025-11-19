@@ -32,7 +32,7 @@ Authorization: Bearer sk_your_secret_key_here
 ### Using cURL
 
 ```bash
-curl -X GET "http://localhost:3000/api/v1/users" \
+curl -X GET "https://vantio.app/api/v1/users" \
   -H "Authorization: Bearer sk_your_secret_key_here"
 ```
 
@@ -41,7 +41,7 @@ curl -X GET "http://localhost:3000/api/v1/users" \
 ```javascript
 const API_KEY = process.env.VANTIO_API_KEY;
 
-const response = await fetch('http://localhost:3000/api/v1/users', {
+const response = await fetch('https://vantio.app/api/v1/users', {
   headers: {
     'Authorization': `Bearer ${API_KEY}`
   }
@@ -55,7 +55,7 @@ const data = await response.json();
 ```javascript
 const axios = require('axios');
 
-const response = await axios.get('http://localhost:3000/api/v1/users', {
+const response = await axios.get('https://vantio.app/api/v1/users', {
   headers: {
     'Authorization': `Bearer ${process.env.VANTIO_API_KEY}`
   }
@@ -76,7 +76,7 @@ headers = {
 }
 
 response = requests.get(
-    'http://localhost:3000/api/v1/users',
+    'https://vantio.app/api/v1/users',
     headers=headers
 )
 
@@ -98,7 +98,7 @@ The Vantio API uses standard HTTP methods:
 For `POST` and `PUT` requests, send JSON data in the request body:
 
 ```javascript
-const response = await fetch('http://localhost:3000/api/v1/referrals', {
+const response = await fetch('https://vantio.app/api/v1/referrals', {
   method: 'POST',
   headers: {
     'Authorization': `Bearer ${API_KEY}`,
@@ -120,7 +120,7 @@ Many endpoints support query parameters for filtering and pagination:
 ```javascript
 // Filter referrals by program and status
 const response = await fetch(
-  'http://localhost:3000/api/v1/referrals?programId=prog_123abc&status=converted&limit=50',
+  'https://vantio.app/api/v1/referrals?programId=prog_123abc&status=converted&limit=50',
   {
     headers: {
       'Authorization': `Bearer ${API_KEY}`
@@ -168,7 +168,7 @@ Always check the response status and handle errors appropriately:
 ```javascript
 async function fetchUsers() {
   try {
-    const response = await fetch('http://localhost:3000/api/v1/users', {
+    const response = await fetch('https://vantio.app/api/v1/users', {
       headers: {
         'Authorization': `Bearer ${API_KEY}`
       }

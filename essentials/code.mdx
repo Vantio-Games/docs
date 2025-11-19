@@ -22,7 +22,7 @@ export VANTIO_API_KEY=sk_your_secret_key_here
 
 ```javascript
 // vantio-client.js
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+const API_BASE_URL = 'https://vantio.app/api/v1';
 const API_KEY = process.env.VANTIO_API_KEY;
 
 class VantioClient {
@@ -195,7 +195,7 @@ from typing import Dict, Optional
 
 class VantioClient:
     def __init__(self):
-        self.base_url = 'http://localhost:3000/api/v1'
+        self.base_url = 'https://vantio.app/api/v1'
         self.api_key = os.environ.get('VANTIO_API_KEY')
         self.headers = {
             'Authorization': f'Bearer {self.api_key}',
@@ -289,7 +289,7 @@ export function useVantio(endpoint, options = {}) {
       try {
         setLoading(true);
         const response = await fetch(
-          `http://localhost:3000/api/v1${endpoint}`,
+          `https://vantio.app/api/v1${endpoint}`,
           {
             headers: {
               'Authorization': `Bearer ${process.env.NEXT_PUBLIC_VANTIO_API_KEY}`

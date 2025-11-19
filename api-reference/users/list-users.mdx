@@ -47,7 +47,7 @@ Authorization: Bearer sk_your_secret_key_here
 <RequestExample>
 
 ```bash
-curl -X GET "http://localhost:3000/api/v1/users?programId=prog_123abc&limit=25&offset=0" \
+curl -X GET "https://vantio.app/api/v1/users?programId=prog_123abc&limit=25&offset=0" \
   -H "Authorization: Bearer sk_your_secret_key_here"
 ```
 
@@ -159,7 +159,7 @@ Use this endpoint to fetch all ambassadors and display them in a dashboard:
 ```javascript
 async function fetchAllAmbassadors(programId) {
   const response = await fetch(
-    `http://localhost:3000/api/v1/users?programId=${programId}&limit=100`,
+    `https://vantio.app/api/v1/users?programId=${programId}&limit=100`,
     {
       headers: {
         'Authorization': `Bearer ${API_KEY}`
@@ -180,7 +180,7 @@ For large datasets, implement pagination to improve performance:
 async function fetchUsersPage(page = 1, pageSize = 50) {
   const offset = (page - 1) * pageSize;
   const response = await fetch(
-    `http://localhost:3000/api/v1/users?limit=${pageSize}&offset=${offset}`,
+    `https://vantio.app/api/v1/users?limit=${pageSize}&offset=${offset}`,
     {
       headers: {
         'Authorization': `Bearer ${API_KEY}`

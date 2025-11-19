@@ -65,15 +65,15 @@ Authorization: Bearer sk_your_secret_key_here
 
 ```bash
 # Get all earnings
-curl -X GET "http://localhost:3000/api/v1/earnings" \
+curl -X GET "https://vantio.app/api/v1/earnings" \
   -H "Authorization: Bearer sk_your_secret_key_here"
 
 # Get paid earnings from a specific program
-curl -X GET "http://localhost:3000/api/v1/earnings?program_id=prog_123abc&status=paid&limit=100" \
+curl -X GET "https://vantio.app/api/v1/earnings?program_id=prog_123abc&status=paid&limit=100" \
   -H "Authorization: Bearer sk_your_secret_key_here"
 
 # Get earnings for a specific referral
-curl -X GET "http://localhost:3000/api/v1/earnings?referral_id=ref_123abc" \
+curl -X GET "https://vantio.app/api/v1/earnings?referral_id=ref_123abc" \
   -H "Authorization: Bearer sk_your_secret_key_here"
 ```
 
@@ -195,7 +195,7 @@ async function fetchEarnings(filters = {}) {
   if (filters.offset) params.append('offset', filters.offset);
   
   const response = await fetch(
-    `http://localhost:3000/api/v1/earnings?${params.toString()}`,
+    `https://vantio.app/api/v1/earnings?${params.toString()}`,
     {
       headers: {
         'Authorization': `Bearer ${API_KEY}`
@@ -264,7 +264,7 @@ async function exportAllEarnings(programId) {
   
   while (hasMore) {
     const response = await fetch(
-      `http://localhost:3000/api/v1/earnings?program_id=${programId}&limit=${limit}&offset=${offset}`,
+      `https://vantio.app/api/v1/earnings?program_id=${programId}&limit=${limit}&offset=${offset}`,
       {
         headers: {
           'Authorization': `Bearer ${API_KEY}`

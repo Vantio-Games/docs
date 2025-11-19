@@ -55,15 +55,15 @@ Authorization: Bearer sk_your_secret_key_here
 
 ```bash
 # Get all posters
-curl -X GET "http://localhost:3000/api/v1/posters" \
+curl -X GET "https://vantio.app/api/v1/posters" \
   -H "Authorization: Bearer sk_your_secret_key_here"
 
 # Get posters from a specific program
-curl -X GET "http://localhost:3000/api/v1/posters?programId=prog_123abc&limit=100" \
+curl -X GET "https://vantio.app/api/v1/posters?programId=prog_123abc&limit=100" \
   -H "Authorization: Bearer sk_your_secret_key_here"
 
 # Get posters from a specific ambassador
-curl -X GET "http://localhost:3000/api/v1/posters?studentId=user_123abc" \
+curl -X GET "https://vantio.app/api/v1/posters?studentId=user_123abc" \
   -H "Authorization: Bearer sk_your_secret_key_here"
 ```
 
@@ -160,7 +160,7 @@ async function fetchPosters(filters = {}) {
   if (filters.offset) params.append('offset', filters.offset);
   
   const response = await fetch(
-    `http://localhost:3000/api/v1/posters?${params.toString()}`,
+    `https://vantio.app/api/v1/posters?${params.toString()}`,
     {
       headers: {
         'Authorization': `Bearer ${API_KEY}`
@@ -206,7 +206,7 @@ async function exportAllPosters(programId) {
   
   while (hasMore) {
     const response = await fetch(
-      `http://localhost:3000/api/v1/posters?programId=${programId}&limit=${limit}&offset=${offset}`,
+      `https://vantio.app/api/v1/posters?programId=${programId}&limit=${limit}&offset=${offset}`,
       {
         headers: {
           'Authorization': `Bearer ${API_KEY}`

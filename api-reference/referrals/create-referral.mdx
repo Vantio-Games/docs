@@ -89,7 +89,7 @@ Authorization: Bearer sk_your_secret_key_here
 <RequestExample>
 
 ```bash
-curl -X POST "http://localhost:3000/api/v1/referrals" \
+curl -X POST "https://vantio.app/api/v1/referrals" \
   -H "Authorization: Bearer sk_your_secret_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -211,7 +211,7 @@ When a user signs up via a referral link, create the referral:
 ```javascript
 async function handleSignupWebhook(signupData, impressionId) {
   try {
-    const response = await fetch('http://localhost:3000/api/v1/referrals', {
+    const response = await fetch('https://vantio.app/api/v1/referrals', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${API_KEY}`,
@@ -254,7 +254,7 @@ Use idempotency keys to prevent duplicate referrals:
 async function createReferralSafely(referralData, userId) {
   const idempotencyKey = `ref_${userId}_${referralData.impression_id}`;
   
-  const response = await fetch('http://localhost:3000/api/v1/referrals', {
+  const response = await fetch('https://vantio.app/api/v1/referrals', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${API_KEY}`,

@@ -94,7 +94,7 @@ All fields in the request body are optional. Only include the fields you want to
 
 ```bash
 # Update earning status to processing
-curl -X PUT "http://localhost:3000/api/v1/earnings/earn_123abc" \
+curl -X PUT "https://vantio.app/api/v1/earnings/earn_123abc" \
   -H "Authorization: Bearer sk_your_secret_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -102,7 +102,7 @@ curl -X PUT "http://localhost:3000/api/v1/earnings/earn_123abc" \
   }'
 
 # Update status to paid with payout reference
-curl -X PUT "http://localhost:3000/api/v1/earnings/earn_123abc" \
+curl -X PUT "https://vantio.app/api/v1/earnings/earn_123abc" \
   -H "Authorization: Bearer sk_your_secret_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -220,7 +220,7 @@ When initiating a payout, update the earning status:
 ```javascript
 async function processPayout(earningId, payoutId) {
   const response = await fetch(
-    `http://localhost:3000/api/v1/earnings/${earningId}`,
+    `https://vantio.app/api/v1/earnings/${earningId}`,
     {
       method: 'PUT',
       headers: {
@@ -249,7 +249,7 @@ After successful payout, mark the earning as paid:
 ```javascript
 async function markEarningAsPaid(earningId, payoutId) {
   const response = await fetch(
-    `http://localhost:3000/api/v1/earnings/${earningId}`,
+    `https://vantio.app/api/v1/earnings/${earningId}`,
     {
       method: 'PUT',
       headers: {
@@ -278,7 +278,7 @@ If a payout fails, mark the earning as failed:
 ```javascript
 async function markEarningAsFailed(earningId, errorMessage) {
   const response = await fetch(
-    `http://localhost:3000/api/v1/earnings/${earningId}`,
+    `https://vantio.app/api/v1/earnings/${earningId}`,
     {
       method: 'PUT',
       headers: {
@@ -306,7 +306,7 @@ If an amount needs to be corrected:
 ```javascript
 async function correctEarningAmount(earningId, correctAmountInCents) {
   const response = await fetch(
-    `http://localhost:3000/api/v1/earnings/${earningId}`,
+    `https://vantio.app/api/v1/earnings/${earningId}`,
     {
       method: 'PUT',
       headers: {
