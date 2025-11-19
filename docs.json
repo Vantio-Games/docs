@@ -93,9 +93,9 @@
           "icon": "book-open-cover"
         },
         {
-          "anchor": "Blog",
-          "href": "https://vantio.app/blog",
-          "icon": "newspaper"
+          "anchor": "Support",
+          "href": "https://help.vantio.app/",
+          "icon": "headset"
         }
       ]
     }
@@ -109,7 +109,7 @@
     "primary": {
       "type": "button",
       "label": "Dashboard",
-      "href": "https://dash.vantio.app"
+      "href": "https://vantio.app/dashboard/company"
     }
   },
   "footer": {
