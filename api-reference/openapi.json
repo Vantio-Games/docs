@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "Son of Swan API",
+    "title": "Vantio API",
     "version": "1.0.0",
     "description": "Public v1 API. Authenticate using your secret key in the Authorization header: \"Bearer sk_...\"."
   },
