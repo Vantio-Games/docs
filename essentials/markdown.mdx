@@ -1,88 +1,218 @@
 ---
-title: 'Markdown Syntax'
-description: 'Text, title, and styling in standard markdown'
-icon: 'text-size'
+title: 'API Authentication & Requests'
+description: 'Learn how to authenticate and make requests to the Vantio API'
+icon: 'key'
 ---
 
-## Titles
+## Authentication Overview
 
-Best used for section headers.
+All Vantio API endpoints require authentication using a Bearer token. Your API key should be included in the `Authorization` header of every request.
 
-```md
-## Titles
+## Getting Your API Key
+
+1. Log in to your [Vantio Dashboard](https://dash.vantio.app)
+2. Navigate to **Settings** → **API Keys**
+3. Create a new API key or copy an existing one
+4. Your API key starts with `sk_`
+
+<Warning>
+  Never expose your API key in client-side code, commit it to version control, or share it publicly. Treat it like a password.
+</Warning>
+
+## Authentication Header
+
+Include your API key in the `Authorization` header:
+
+```bash
+Authorization: Bearer sk_your_secret_key_here
 ```
 
-### Subtitles
+## Making API Requests
 
-Best use to subsection headers.
+### Using cURL
 
-```md
-### Subtitles
+```bash
+curl -X GET "http://localhost:3000/api/v1/users" \
+  -H "Authorization: Bearer sk_your_secret_key_here"
 ```
 
-<Tip>
+### Using JavaScript (Fetch API)
 
-Each **title** and **subtitle** creates an anchor and also shows up on the table of contents on the right.
+```javascript
+const API_KEY = process.env.VANTIO_API_KEY;
 
-</Tip>
+const response = await fetch('http://localhost:3000/api/v1/users', {
+  headers: {
+    'Authorization': `Bearer ${API_KEY}`
+  }
+});
 
-## Text Formatting
-
-We support most markdown formatting. Simply add `**`, `_`, or `~` around text to format it.
-
-| Style         | How to write it   | Result          |
-| ------------- | ----------------- | --------------- |
-| Bold          | `**bold**`        | **bold**        |
-| Italic        | `_italic_`        | _italic_        |
-| Strikethrough | `~strikethrough~` | ~strikethrough~ |
-
-You can combine these. For example, write `**_bold and italic_**` to get **_bold and italic_** text.
-
-You need to use HTML to write superscript and subscript text. That is, add `<sup>` or `<sub>` around your text.
-
-| Text Size   | How to write it          | Result                 |
-| ----------- | ------------------------ | ---------------------- |
-| Superscript | `<sup>superscript</sup>` | <sup>superscript</sup> |
-| Subscript   | `<sub>subscript</sub>`   | <sub>subscript</sub>   |
-
-## Linking to Pages
-
-You can add a link by wrapping text in `[]()`. You would write `[link to google](https://google.com)` to [link to google](https://google.com).
-
-Links to pages in your docs need to be root-relative. Basically, you should include the entire folder path. For example, `[link to text](/writing-content/text)` links to the page "Text" in our components section.
-
-Relative links like `[link to text](../text)` will open slower because we cannot optimize them as easily.
-
-## Blockquotes
-
-### Singleline
-
-To create a blockquote, add a `>` in front of a paragraph.
-
-> Dorothy followed her through many of the beautiful rooms in her castle.
-
-```md
-> Dorothy followed her through many of the beautiful rooms in her castle.
+const data = await response.json();
 ```
 
-### Multiline
+### Using JavaScript (Axios)
 
-> Dorothy followed her through many of the beautiful rooms in her castle.
->
-> The Witch bade her clean the pots and kettles and sweep the floor and keep the fire fed with wood.
+```javascript
+const axios = require('axios');
 
-```md
-> Dorothy followed her through many of the beautiful rooms in her castle.
->
-> The Witch bade her clean the pots and kettles and sweep the floor and keep the fire fed with wood.
+const response = await axios.get('http://localhost:3000/api/v1/users', {
+  headers: {
+    'Authorization': `Bearer ${process.env.VANTIO_API_KEY}`
+  }
+});
+
+const data = response.data;
 ```
 
-### LaTeX
+### Using Python (Requests)
 
-Mintlify supports [LaTeX](https://www.latex-project.org) through the Latex component.
+```python
+import os
+import requests
 
-<Latex>8 x (vk x H1 - H2) = (0,1)</Latex>
+api_key = os.environ.get('VANTIO_API_KEY')
+headers = {
+    'Authorization': f'Bearer {api_key}'
+}
 
-```md
-<Latex>8 x (vk x H1 - H2) = (0,1)</Latex>
+response = requests.get(
+    'http://localhost:3000/api/v1/users',
+    headers=headers
+)
+
+data = response.json()
+```
+
+## Request Methods
+
+The Vantio API uses standard HTTP methods:
+
+| Method | Usage | Example |
+|--------|-------|---------|
+| `GET` | Retrieve resources | List users, get referral details |
+| `POST` | Create resources | Create referral, create earning |
+| `PUT` | Update resources | Update referral status, update earning |
+
+## Request Body Format
+
+For `POST` and `PUT` requests, send JSON data in the request body:
+
+```javascript
+const response = await fetch('http://localhost:3000/api/v1/referrals', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${API_KEY}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    impression_id: 'imp_123abc',
+    first_name: 'John',
+    last_name: 'Doe',
+    email: 'john.doe@example.com'
+  })
+});
+```
+
+## Query Parameters
+
+Many endpoints support query parameters for filtering and pagination:
+
+```javascript
+// Filter referrals by program and status
+const response = await fetch(
+  'http://localhost:3000/api/v1/referrals?programId=prog_123abc&status=converted&limit=50',
+  {
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`
+    }
+  }
+);
+```
+
+## Response Format
+
+All successful API responses return JSON:
+
+```json
+{
+  "id": "ref_123abc",
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john.doe@example.com",
+  "status": "pending"
+}
+```
+
+## Error Responses
+
+The API uses standard HTTP status codes:
+
+- `200` - Success
+- `400` - Bad Request (invalid parameters)
+- `401` - Unauthorized (invalid or missing API key)
+- `404` - Not Found (resource doesn't exist)
+
+Error responses include a message:
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Invalid or missing API key"
+}
+```
+
+## Handling Errors
+
+Always check the response status and handle errors appropriately:
+
+```javascript
+async function fetchUsers() {
+  try {
+    const response = await fetch('http://localhost:3000/api/v1/users', {
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'API request failed');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    throw error;
+  }
+}
+```
+
+## Rate Limits
+
+The Vantio API enforces rate limits to ensure fair usage. Check response headers for rate limit information:
+
+- `X-RateLimit-Limit` - Maximum requests allowed
+- `X-RateLimit-Remaining` - Remaining requests in current window
+- `X-RateLimit-Reset` - Time when the rate limit resets
+
+## Best Practices
+
+1. **Store API keys securely** - Use environment variables, never hardcode
+2. **Handle errors gracefully** - Always check response status codes
+3. **Use idempotency keys** - For POST requests that might be retried
+4. **Implement retry logic** - For transient failures (with exponential backoff)
+5. **Cache responses** - When appropriate to reduce API calls
+
+## Environment Variables
+
+Store your API key as an environment variable:
+
+```bash
+# .env file
+VANTIO_API_KEY=sk_your_secret_key_here
+```
+
+```javascript
+// Access in your code
+const API_KEY = process.env.VANTIO_API_KEY;
 ```

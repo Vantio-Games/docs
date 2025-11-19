@@ -1,59 +1,267 @@
 ---
-title: 'Images and Embeds'
-description: 'Add image, video, and other HTML elements'
-icon: 'image'
+title: 'QR Codes & Assets'
+description: 'Working with QR codes, posters, and visual assets in Vantio'
+icon: 'qrcode'
 ---
 
-<img
-  style={{ borderRadius: '0.5rem' }}
-  src="https://mintlify-assets.b-cdn.net/bigbend.jpg"
-/>
+## QR Code Posters
 
-## Image
+Vantio generates unique QR codes for each poster placement. These QR codes link scans back to the ambassador who placed the poster.
 
-### Using Markdown
+## Getting QR Code URLs
 
-The [markdown syntax](https://www.markdownguide.org/basic-syntax/#images) lets you add images using the following code
+Each poster has a `qr_code_url` that you can use to display or download the QR code:
 
-```md
-![title](/path/image.jpg)
+```javascript
+// Get poster with QR code URL
+const response = await fetch(`/api/v1/posters/${posterId}`, {
+  headers: {
+    'Authorization': `Bearer ${API_KEY}`
+  }
+});
+
+const poster = await response.json();
+const qrCodeUrl = poster.qr_code_url;
 ```
 
-Note that the image file size must be less than 5MB. Otherwise, we recommend hosting on a service like [Cloudinary](https://cloudinary.com/) or [S3](https://aws.amazon.com/s3/). You can then use that URL and embed.
+## Displaying QR Codes
 
-### Using Embeds
-
-To get more customizability with images, you can also use [embeds](/writing-content/embed) to add images
+### In HTML
 
 ```html
-<img height="200" src="/path/image.jpg" />
+<img src="https://example.com/qr-codes/poster_123abc.png" alt="QR Code" />
 ```
 
-## Embeds and HTML elements
+### In React
 
-<iframe
-  width="560"
-  height="315"
-  src="https://www.youtube.com/embed/4KzFe50RQkQ"
-  title="YouTube video player"
-  frameBorder="0"
-  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-  allowFullScreen
-  style={{ width: '100%', borderRadius: '0.5rem' }}
-></iframe>
+```jsx
+function PosterQRCode({ posterId }) {
+  const [qrCodeUrl, setQrCodeUrl] = useState(null);
+  
+  useEffect(() => {
+    async function fetchPoster() {
+      const response = await fetch(`/api/v1/posters/${posterId}`, {
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`
+        }
+      });
+      const poster = await response.json();
+      setQrCodeUrl(poster.qr_code_url);
+    }
+    
+    fetchPoster();
+  }, [posterId]);
+  
+  if (!qrCodeUrl) return <div>Loading...</div>;
+  
+  return (
+    <div>
+      <img src={qrCodeUrl} alt="Poster QR Code" />
+      <a href={qrCodeUrl} download>Download QR Code</a>
+    </div>
+  );
+}
+```
 
-<br />
+## Downloading QR Codes
 
-<Tip>
+### JavaScript
 
-Mintlify supports [HTML tags in Markdown](https://www.markdownguide.org/basic-syntax/#html). This is helpful if you prefer HTML tags to Markdown syntax, and lets you create documentation with infinite flexibility.
+```javascript
+async function downloadQRCode(posterId) {
+  const response = await fetch(`/api/v1/posters/${posterId}`, {
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`
+    }
+  });
+  
+  const poster = await response.json();
+  
+  // Download the QR code image
+  const imageResponse = await fetch(poster.qr_code_url);
+  const blob = await imageResponse.blob();
+  const url = window.URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `poster-${posterId}-qr.png`;
+  a.click();
+  
+  window.URL.revokeObjectURL(url);
+}
+```
 
-</Tip>
+### Node.js
 
-### iFrames
+```javascript
+const fs = require('fs');
+const https = require('https');
 
-Loads another HTML page within the document. Most commonly used for embedding videos.
+async function downloadQRCode(posterId, outputPath) {
+  const response = await fetch(`http://localhost:3000/api/v1/posters/${posterId}`, {
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`
+    }
+  });
+  
+  const poster = await response.json();
+  
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(outputPath);
+    https.get(poster.qr_code_url, (response) => {
+      response.pipe(file);
+      file.on('finish', () => {
+        file.close();
+        resolve();
+      });
+    }).on('error', reject);
+  });
+}
+```
+
+## Embedding QR Codes in Documents
+
+### PDF Generation
+
+```javascript
+const PDFDocument = require('pdfkit');
+const fetch = require('node-fetch');
+
+async function generatePosterPDF(posterId) {
+  const response = await fetch(`http://localhost:3000/api/v1/posters/${posterId}`, {
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`
+    }
+  });
+  
+  const poster = await response.json();
+  
+  const doc = new PDFDocument();
+  doc.pipe(fs.createWriteStream('poster.pdf'));
+  
+  // Add QR code image
+  const qrImage = await fetch(poster.qr_code_url);
+  const qrBuffer = await qrImage.buffer();
+  
+  doc.image(qrBuffer, {
+    fit: [200, 200],
+    align: 'center'
+  });
+  
+  doc.text('Scan this QR code to sign up!', {
+    align: 'center'
+  });
+  
+  doc.end();
+}
+```
+
+## Custom Poster Templates
+
+You can create custom poster templates that include the QR code:
 
 ```html
-<iframe src="https://www.youtube.com/embed/4KzFe50RQkQ"> </iframe>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ambassador Poster</title>
+  <style>
+    .poster {
+      width: 8.5in;
+      height: 11in;
+      padding: 1in;
+      text-align: center;
+    }
+    .qr-code {
+      width: 3in;
+      height: 3in;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="poster">
+    <h1>Join Our Program!</h1>
+    <p>Scan the QR code below to get started</p>
+    <img class="qr-code" src="POSTER_QR_CODE_URL" alt="QR Code" />
+    <p>Questions? Contact us at support@example.com</p>
+  </div>
+</body>
+</html>
 ```
+
+## Batch QR Code Generation
+
+Generate QR codes for multiple posters:
+
+```javascript
+async function generateAllPosterQRCodes(programId) {
+  const response = await fetch(
+    `http://localhost:3000/api/v1/posters?programId=${programId}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`
+      }
+    }
+  );
+  
+  const { posters } = await response.json();
+  
+  const qrCodes = posters.map(poster => ({
+    posterId: poster.id,
+    qrCodeUrl: poster.qr_code_url,
+    location: poster.location
+  }));
+  
+  return qrCodes;
+}
+```
+
+## Best Practices
+
+1. **Cache QR code URLs** - QR codes don't change, so cache the URLs
+2. **Provide download options** - Let ambassadors download QR codes easily
+3. **Use appropriate sizes** - QR codes should be at least 2x2 inches for scanning
+4. **Test scanning** - Always test QR codes before printing
+5. **Include instructions** - Add text explaining what to do after scanning
+
+## Image Assets
+
+### Profile Pictures
+
+Referrals can include profile pictures:
+
+```javascript
+const referral = await createReferral({
+  impression_id: 'imp_123abc',
+  first_name: 'John',
+  last_name: 'Doe',
+  email: 'john@example.com',
+  profile_picture: 'https://example.com/profiles/john.jpg'
+});
+```
+
+### Displaying Profile Pictures
+
+```jsx
+function ReferralCard({ referral }) {
+  return (
+    <div>
+      {referral.profile_picture && (
+        <img 
+          src={referral.profile_picture} 
+          alt={`${referral.first_name} ${referral.last_name}`}
+          style={{ width: 50, height: 50, borderRadius: '50%' }}
+        />
+      )}
+      <h3>{referral.first_name} {referral.last_name}</h3>
+    </div>
+  );
+}
+```
+
+## Next Steps
+
+- Learn about [Poster Management](/api-reference/posters/list-posters) in the API
+- Check [Code Examples](/essentials/code) for more integration patterns
+- Explore [Integration Patterns](/essentials/reusable-snippets) for reusable code

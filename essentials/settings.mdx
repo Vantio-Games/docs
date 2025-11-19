@@ -1,318 +1,252 @@
 ---
-title: 'Global Settings'
-description: 'Mintlify gives you complete control over the look and feel of your documentation using the docs.json file'
+title: 'Configuration & Settings'
+description: 'Configure your Vantio account, programs, and API settings'
 icon: 'gear'
 ---
 
-Every Mintlify site needs a `docs.json` file with the core configuration settings. Learn more about the [properties](#properties) below.
+## Overview
 
-## Properties
+This guide covers how to configure your Vantio account, set up programs, and customize settings for your referral system.
 
-<ResponseField name="name" type="string" required>
-Name of your project. Used for the global title.
+## Account Settings
 
-Example: `mintlify`
+### API Keys
 
-</ResponseField>
+Manage your API keys in the dashboard:
 
-<ResponseField name="navigation" type="Navigation[]" required>
-  An array of groups with all the pages within that group
-  <Expandable title="Navigation">
-    <ResponseField name="group" type="string">
-    The name of the group.
+1. Navigate to **Settings** → **API Keys**
+2. Click **Create New API Key**
+3. Give your key a descriptive name (e.g., "Production Server", "Development")
+4. Copy and store your key securely
 
-    Example: `Settings`
+<Warning>
+  API keys are only shown once when created. If you lose a key, you'll need to create a new one and revoke the old one.
+</Warning>
 
-    </ResponseField>
-    <ResponseField name="pages" type="string[]">
-    The relative paths to the markdown files that will serve as pages.
+### Webhook Configuration
 
-    Example: `["customization", "page"]`
+Set up webhooks to receive real-time notifications:
 
-    </ResponseField>
+1. Go to **Settings** → **Webhooks**
+2. Click **Add Webhook**
+3. Enter your webhook URL
+4. Select events to subscribe to:
+   - Referral created
+   - Referral status changed
+   - Earning created
+   - Earning status changed
 
-  </Expandable>
-</ResponseField>
+## Program Configuration
 
-<ResponseField name="logo" type="string or object">
-  Path to logo image or object with path to "light" and "dark" mode logo images
-  <Expandable title="Logo">
-    <ResponseField name="light" type="string">
-      Path to the logo in light mode
-    </ResponseField>
-    <ResponseField name="dark" type="string">
-      Path to the logo in dark mode
-    </ResponseField>
-    <ResponseField name="href" type="string" default="/">
-      Where clicking on the logo links you to
-    </ResponseField>
-  </Expandable>
-</ResponseField>
+### Creating a Program
 
-<ResponseField name="favicon" type="string">
-  Path to the favicon image
-</ResponseField>
+Programs organize your referral system. Each program can have:
 
-<ResponseField name="colors" type="Colors">
-  Hex color codes for your global theme
-  <Expandable title="Colors">
-    <ResponseField name="primary" type="string" required>
-      The primary color. Used for most often for highlighted content, section
-      headers, accents, in light mode
-    </ResponseField>
-    <ResponseField name="light" type="string">
-      The primary color for dark mode. Used for most often for highlighted
-      content, section headers, accents, in dark mode
-    </ResponseField>
-    <ResponseField name="dark" type="string">
-      The primary color for important buttons
-    </ResponseField>
-    <ResponseField name="background" type="object">
-      The color of the background in both light and dark mode
-      <Expandable title="Object">
-        <ResponseField name="light" type="string" required>
-          The hex color code of the background in light mode
-        </ResponseField>
-        <ResponseField name="dark" type="string" required>
-          The hex color code of the background in dark mode
-        </ResponseField>
-      </Expandable>
-    </ResponseField>
-  </Expandable>
-</ResponseField>
+- Multiple student ambassadors
+- Unique commission rates
+- Custom settings and rules
 
-<ResponseField name="topbarLinks" type="TopbarLink[]">
-  Array of `name`s and `url`s of links you want to include in the topbar
-  <Expandable title="TopbarLink">
-    <ResponseField name="name" type="string">
-    The name of the button.
+**Via Dashboard:**
+1. Navigate to **Programs**
+2. Click **Create New Program**
+3. Configure:
+   - Program name
+   - Description
+   - Commission structure
+   - Payout settings
 
-    Example: `Contact us`
-    </ResponseField>
-    <ResponseField name="url" type="string">
-    The url once you click on the button. Example: `https://mintlify.com/docs`
-    </ResponseField>
+### Program Settings
 
-  </Expandable>
-</ResponseField>
+Configure program-specific settings:
 
-<ResponseField name="topbarCtaButton" type="Call to Action">
-  <Expandable title="Topbar Call to Action">
-    <ResponseField name="type" type={'"link" or "github"'} default="link">
-    Link shows a button. GitHub shows the repo information at the url provided including the number of GitHub stars.
-    </ResponseField>
-    <ResponseField name="url" type="string">
-    If `link`: What the button links to.
-    
-    If `github`: Link to the repository to load GitHub information from.
-    </ResponseField>
-    <ResponseField name="name" type="string">
-    Text inside the button. Only required if `type` is a `link`.
-    </ResponseField>
-
-  </Expandable>
-</ResponseField>
-
-<ResponseField name="versions" type="string[]">
-  Array of version names. Only use this if you want to show different versions
-  of docs with a dropdown in the navigation bar.
-</ResponseField>
-
-<ResponseField name="anchors" type="Anchor[]">
-  An array of the anchors, includes the `icon`, `color`, and `url`.
-  <Expandable title="Anchor">
-    <ResponseField name="icon" type="string">
-    The [Font Awesome](https://fontawesome.com/search?q=heart) icon used to feature the anchor.
-
-    Example: `comments`
-    </ResponseField>
-    <ResponseField name="name" type="string">
-    The name of the anchor label.
-
-    Example: `Community`
-    </ResponseField>
-    <ResponseField name="url" type="string">
-      The start of the URL that marks what pages go in the anchor. Generally, this is the name of the folder you put your pages in.
-    </ResponseField>
-    <ResponseField name="color" type="string">
-      The hex color of the anchor icon background. Can also be a gradient if you pass an object with the properties `from` and `to` that are each a hex color.
-    </ResponseField>
-    <ResponseField name="version" type="string">
-      Used if you want to hide an anchor until the correct docs version is selected.
-    </ResponseField>
-    <ResponseField name="isDefaultHidden" type="boolean" default="false">
-      Pass `true` if you want to hide the anchor until you directly link someone to docs inside it.
-    </ResponseField>
-    <ResponseField name="iconType" default="duotone" type="string">
-      One of: "brands", "duotone", "light", "sharp-solid", "solid", or "thin"
-    </ResponseField>
-
-  </Expandable>
-</ResponseField>
-
-<ResponseField name="topAnchor" type="Object">
-  Override the default configurations for the top-most anchor.
-  <Expandable title="Object">
-    <ResponseField name="name" default="Documentation" type="string">
-      The name of the top-most anchor
-    </ResponseField>
-    <ResponseField name="icon" default="book-open" type="string">
-      Font Awesome icon.
-    </ResponseField>
-    <ResponseField name="iconType" default="duotone" type="string">
-      One of: "brands", "duotone", "light", "sharp-solid", "solid", or "thin"
-    </ResponseField>
-  </Expandable>
-</ResponseField>
-
-<ResponseField name="tabs" type="Tabs[]">
-  An array of navigational tabs.
-  <Expandable title="Tabs">
-    <ResponseField name="name" type="string">
-      The name of the tab label.
-    </ResponseField>
-    <ResponseField name="url" type="string">
-      The start of the URL that marks what pages go in the tab. Generally, this
-      is the name of the folder you put your pages in.
-    </ResponseField>
-  </Expandable>
-</ResponseField>
-
-<ResponseField name="api" type="API">
-  Configuration for API settings. Learn more about API pages at [API Components](/api-playground/demo).
-  <Expandable title="API">
-    <ResponseField name="baseUrl" type="string">
-      The base url for all API endpoints. If `baseUrl` is an array, it will enable for multiple base url
-      options that the user can toggle.
-    </ResponseField>
-
-    <ResponseField name="auth" type="Auth">
-      <Expandable title="Auth">
-        <ResponseField name="method" type='"bearer" | "basic" | "key"'>
-          The authentication strategy used for all API endpoints.
-        </ResponseField>
-        <ResponseField name="name" type="string">
-        The name of the authentication parameter used in the API playground.
-
-        If method is `basic`, the format should be `[usernameName]:[passwordName]`
-        </ResponseField>
-        <ResponseField name="inputPrefix" type="string">
-        The default value that's designed to be a prefix for the authentication input field.
-
-        E.g. If an `inputPrefix` of `AuthKey` would inherit the default input result of the authentication field as `AuthKey`.
-        </ResponseField>
-      </Expandable>
-    </ResponseField>
-
-    <ResponseField name="playground" type="Playground">
-      Configurations for the API playground
-
-      <Expandable title="Playground">
-        <ResponseField name="mode" default="show" type='"show" | "simple" | "hide"'>
-          Whether the playground is showing, hidden, or only displaying the endpoint with no added user interactivity `simple`
-
-          Learn more at the [playground guides](/api-playground/demo)
-        </ResponseField>
-      </Expandable>
-    </ResponseField>
-
-    <ResponseField name="maintainOrder" type="boolean">
-      Enabling this flag ensures that key ordering in OpenAPI pages matches the key ordering defined in the OpenAPI file.
-
-      <Warning>This behavior will soon be enabled by default, at which point this field will be deprecated.</Warning>
-    </ResponseField>
-
-  </Expandable>
-</ResponseField>
-
-<ResponseField name="openapi" type="string | string[]">
-  A string or an array of strings of URL(s) or relative path(s) pointing to your
-  OpenAPI file.
+<ResponseField name="Commission Rate" type="number" required>
+  The percentage commission ambassadors earn on referrals. Can be a flat rate or tiered structure.
   
-  Examples:
-  <CodeGroup>
-    ```json Absolute
-    "openapi": "https://example.com/openapi.json"
-    ```
-    ```json Relative
-    "openapi": "/openapi.json"
-    ```
-    ```json Multiple
-    "openapi": ["https://example.com/openapi1.json", "/openapi2.json", "/openapi3.json"]
-    ```
-  </CodeGroup>
-
+  Example: `10` for 10% commission
 </ResponseField>
 
-<ResponseField name="footerSocials" type="FooterSocials">
-  An object of social media accounts where the key:property pair represents the social media platform and the account url.
+<ResponseField name="Payout Schedule" type="string" required>
+  How often ambassadors receive payouts. Options:
+  - `weekly` - Weekly payouts
+  - `biweekly` - Every two weeks
+  - `monthly` - Monthly payouts
+  - `manual` - Manual payouts only
+</ResponseField>
+
+<ResponseField name="Minimum Payout" type="number" required>
+  Minimum earning amount required before payout is processed.
   
-  Example: 
-  ```json
-  {
-    "x": "https://x.com/mintlify",
-    "website": "https://mintlify.com"
-  }
-  ```
-  <Expandable title="FooterSocials">
-    <ResponseField name="[key]" type="string">
-    One of the following values `website`, `facebook`, `x`, `discord`, `slack`, `github`, `linkedin`, `instagram`, `hacker-news`
-    
-    Example: `x`
-    </ResponseField>
-    <ResponseField name="property" type="string">
-    The URL to the social platform.
-    
-    Example: `https://x.com/mintlify`
-    </ResponseField>
-  </Expandable>
+  Example: `5000` for $50.00 minimum
 </ResponseField>
 
-<ResponseField name="feedback" type="Feedback">
-  Configurations to enable feedback buttons
+## API Configuration
 
-  <Expandable title="Feedback">
-    <ResponseField name="suggestEdit" type="boolean" default="false">
-    Enables a button to allow users to suggest edits via pull requests
-    </ResponseField>
-    <ResponseField name="raiseIssue" type="boolean" default="false">
-    Enables a button to allow users to raise an issue about the documentation
-    </ResponseField>
-  </Expandable>
+### Base URL
+
+The Vantio API base URL depends on your environment:
+
+- **Development:** `http://localhost:3000`
+- **Production:** `https://api.vantio.app` (or your production URL)
+
+### Environment Variables
+
+Store configuration in environment variables:
+
+```bash
+# .env
+VANTIO_API_KEY=sk_your_secret_key_here
+VANTIO_BASE_URL=https://api.vantio.app
+VANTIO_PROGRAM_ID=prog_123abc
+```
+
+### Client Configuration
+
+Configure your API client:
+
+```javascript
+// config/vantio.js
+const config = {
+  apiKey: process.env.VANTIO_API_KEY,
+  baseURL: process.env.VANTIO_BASE_URL || 'http://localhost:3000',
+  defaultProgramId: process.env.VANTIO_PROGRAM_ID,
+  timeout: 30000, // 30 seconds
+  retries: 3
+};
+
+module.exports = config;
+```
+
+## Referral Settings
+
+### Status Workflow
+
+Configure the referral status workflow:
+
+1. **Pending** - Initial status when referral is created
+2. **Converted** - Referred customer made a purchase
+3. **Verified** - Conversion verified by admin
+4. **Rejected** - Referral doesn't meet criteria
+
+### Auto-Verification
+
+Enable automatic verification for referrals:
+
+- **Auto-verify on conversion** - Automatically verify when status changes to `converted`
+- **Require manual verification** - All referrals require manual approval
+
+## Earning Settings
+
+### Commission Calculation
+
+Configure how commissions are calculated:
+
+- **Percentage-based** - Fixed percentage of purchase amount
+- **Tiered** - Different rates based on volume
+- **Fixed amount** - Fixed commission per conversion
+
+### Payout Processing
+
+Configure payout processing:
+
+<ResponseField name="Payment Provider" type="string" required>
+  Integration with payment providers (Stripe, PayPal, etc.)
 </ResponseField>
 
-<ResponseField name="modeToggle" type="ModeToggle">
-  Customize the dark mode toggle.
-  <Expandable title="ModeToggle">
-    <ResponseField name="default" type={'"light" or "dark"'}>
-      Set if you always want to show light or dark mode for new users. When not
-      set, we default to the same mode as the user's operating system.
-    </ResponseField>
-    <ResponseField name="isHidden" type="boolean" default="false">
-      Set to true to hide the dark/light mode toggle. You can combine `isHidden` with `default` to force your docs to only use light or dark mode. For example:
+<ResponseField name="Payout Method" type="string" required>
+  How ambassadors receive payments:
+  - `bank_transfer` - Direct bank transfer
+  - `paypal` - PayPal payment
+  - `check` - Physical check
+</ResponseField>
+
+## Security Settings
+
+### API Key Rotation
+
+Regularly rotate your API keys:
+
+1. Create a new API key
+2. Update your application to use the new key
+3. Test that everything works
+4. Revoke the old key
+
+### Rate Limiting
+
+Be aware of API rate limits:
+
+- **Standard Plan:** 100 requests/minute
+- **Pro Plan:** 1000 requests/minute
+- **Enterprise:** Custom limits
+
+Implement retry logic with exponential backoff:
+
+```javascript
+async function requestWithRetry(url, options, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok) return response;
       
-      <CodeGroup>
-      ```json Only Dark Mode
-      "modeToggle": {
-        "default": "dark",
-        "isHidden": true
+      if (response.status === 429) {
+        const delay = Math.pow(2, i) * 1000; // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
       }
-      ```
+      
+      throw new Error(`Request failed: ${response.status}`);
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+    }
+  }
+}
+```
 
-      ```json Only Light Mode
-      "modeToggle": {
-        "default": "light",
-        "isHidden": true
-      }
-      ```
-      </CodeGroup>
+## Notification Settings
 
-    </ResponseField>
+### Email Notifications
 
-  </Expandable>
-</ResponseField>
+Configure email notifications for:
 
-<ResponseField name="backgroundImage" type="string">
-  A background image to be displayed behind every page. See example with
-  [Infisical](https://infisical.com/docs) and [FRPC](https://frpc.io).
-</ResponseField>
+- New referrals
+- Status changes
+- Payout processed
+- Account activity
+
+### Webhook Notifications
+
+Set up webhooks for real-time updates:
+
+```javascript
+// Example webhook handler
+app.post('/webhooks/vantio', async (req, res) => {
+  const { event, data } = req.body;
+  
+  switch (event) {
+    case 'referral.created':
+      await handleNewReferral(data);
+      break;
+    case 'earning.created':
+      await handleNewEarning(data);
+      break;
+    case 'earning.paid':
+      await handleEarningPaid(data);
+      break;
+  }
+  
+  res.json({ received: true });
+});
+```
+
+## Best Practices
+
+1. **Use environment-specific keys** - Separate keys for development and production
+2. **Rotate keys regularly** - Improve security by rotating API keys periodically
+3. **Monitor usage** - Track API usage to stay within rate limits
+4. **Test webhooks** - Use webhook testing tools to verify your endpoints
+5. **Backup settings** - Export and backup your configuration
+
+## Next Steps
+
+- Review [API Authentication](/essentials/markdown) for authentication setup
+- Check [Code Examples](/essentials/code) for integration patterns
+- Explore [Integration Patterns](/essentials/reusable-snippets) for reusable code

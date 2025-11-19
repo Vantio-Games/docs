@@ -1,87 +1,218 @@
 ---
-title: 'Navigation'
-description: 'The navigation field in docs.json defines the pages that go in the navigation menu'
+title: 'API Structure & Navigation'
+description: 'Understanding the Vantio API structure and how to navigate resources'
 icon: 'map'
 ---
 
-The navigation menu is the list of links on every website.
+## API Structure Overview
 
-You will likely update `docs.json` every time you add a new page. Pages do not show up automatically.
+The Vantio API is organized into resource groups that represent different aspects of your referral program. Understanding this structure helps you navigate the API effectively.
 
-## Navigation syntax
+## Resource Groups
 
-Our navigation syntax is recursive which means you can make nested navigation groups. You don't need to include `.mdx` in page names.
+The Vantio API is organized into five main resource groups:
 
-<CodeGroup>
+### Users
+Student ambassadors enrolled in your programs.
 
-```json Regular Navigation
-"navigation": {
-  "tabs": [
-    {
-      "tab": "Docs",
-      "groups": [
-        {
-          "group": "Getting Started",
-          "pages": ["quickstart"]
-        }
-      ]
-    }
-  ]
+**Endpoints:**
+- `GET /api/v1/users` - List all users
+- `GET /api/v1/users/{id}` - Get specific user
+
+**Use Cases:**
+- View all ambassadors
+- Get ambassador details
+- Filter by program
+
+### Referrals
+Signups and conversions from your referral program.
+
+**Endpoints:**
+- `GET /api/v1/referrals` - List referrals
+- `POST /api/v1/referrals` - Create referral
+- `GET /api/v1/referrals/{id}` - Get referral
+- `PUT /api/v1/referrals/{id}` - Update referral
+
+**Use Cases:**
+- Track signups
+- Monitor conversions
+- Update referral status
+
+### Posters
+QR code posters placed by ambassadors.
+
+**Endpoints:**
+- `GET /api/v1/posters` - List posters
+- `GET /api/v1/posters/{id}` - Get poster
+
+**Use Cases:**
+- View all poster placements
+- Download QR codes
+- Track poster performance
+
+### Impressions
+QR code scans and engagement tracking.
+
+**Endpoints:**
+- `GET /api/v1/impressions` - List impressions
+- `GET /api/v1/impressions/{id}` - Get impression
+
+**Use Cases:**
+- Track QR code scans
+- Monitor engagement
+- Analyze scan patterns
+
+### Earnings
+Commissions and payouts for ambassadors.
+
+**Endpoints:**
+- `GET /api/v1/earnings` - List earnings
+- `POST /api/v1/earnings` - Create earning
+- `GET /api/v1/earnings/{id}` - Get earning
+- `PUT /api/v1/earnings/{id}` - Update earning
+
+**Use Cases:**
+- Track commissions
+- Process payouts
+- Monitor earnings status
+
+## Resource Relationships
+
+Understanding how resources relate helps you navigate the API:
+
+```
+Program
+  ├── Users (Ambassadors)
+  │     ├── Posters
+  │     │     └── Impressions (QR Scans)
+  │     │           └── Referrals (Signups)
+  │     │                 └── Earnings (Commissions)
+```
+
+### Navigation Flow
+
+1. **Start with a Program** - Programs contain all other resources
+2. **Find Users** - Users are ambassadors in programs
+3. **Track Posters** - Posters are placed by users
+4. **Monitor Impressions** - Impressions come from poster scans
+5. **Create Referrals** - Referrals link to impressions
+6. **Generate Earnings** - Earnings link to referrals
+
+## Filtering Resources
+
+Most list endpoints support filtering to help you navigate:
+
+### By Program
+
+```javascript
+// Get all resources for a specific program
+const users = await fetch('/api/v1/users?programId=prog_123abc');
+const referrals = await fetch('/api/v1/referrals?programId=prog_123abc');
+const posters = await fetch('/api/v1/posters?programId=prog_123abc');
+```
+
+### By User/Student
+
+```javascript
+// Get resources for a specific ambassador
+const referrals = await fetch('/api/v1/referrals?studentId=user_123abc');
+const posters = await fetch('/api/v1/posters?studentId=user_123abc');
+```
+
+### By Status
+
+```javascript
+// Filter by status
+const referrals = await fetch('/api/v1/referrals?status=converted');
+const earnings = await fetch('/api/v1/earnings?status=paid');
+```
+
+## Pagination
+
+Navigate through large result sets using pagination:
+
+```javascript
+// Page 1
+const page1 = await fetch('/api/v1/referrals?limit=50&offset=0');
+
+// Page 2
+const page2 = await fetch('/api/v1/referrals?limit=50&offset=50');
+
+// Page 3
+const page3 = await fetch('/api/v1/referrals?limit=50&offset=100');
+```
+
+## Common Navigation Patterns
+
+### Get All Data for a Program
+
+```javascript
+async function getProgramData(programId) {
+  const [users, referrals, posters, impressions, earnings] = await Promise.all([
+    fetch(`/api/v1/users?programId=${programId}`),
+    fetch(`/api/v1/referrals?programId=${programId}`),
+    fetch(`/api/v1/posters?programId=${programId}`),
+    fetch(`/api/v1/impressions?programId=${programId}`),
+    fetch(`/api/v1/earnings?program_id=${programId}`)
+  ]);
+  
+  return {
+    users: await users.json(),
+    referrals: await referrals.json(),
+    posters: await posters.json(),
+    impressions: await impressions.json(),
+    earnings: await earnings.json()
+  };
 }
 ```
 
-```json Nested Navigation
-"navigation": {
-  "tabs": [
-    {
-      "tab": "Docs",
-      "groups": [
-        {
-          "group": "Getting Started",
-          "pages": [
-            "quickstart",
-            {
-              "group": "Nested Reference Pages",
-              "pages": ["nested-reference-page"]
-            }
-          ]
-        }
-      ]
-    }
-  ]
+### Follow the Referral Chain
+
+```javascript
+async function getReferralChain(impressionId) {
+  // Get the impression
+  const impression = await fetch(`/api/v1/impressions/${impressionId}`);
+  
+  // Get referrals from this impression
+  const referrals = await fetch(
+    `/api/v1/referrals?impression_id=${impressionId}`
+  );
+  
+  // Get earnings for each referral
+  const earningsPromises = referrals.map(ref =>
+    fetch(`/api/v1/earnings?referral_id=${ref.id}`)
+  );
+  const earnings = await Promise.all(earningsPromises);
+  
+  return {
+    impression,
+    referrals,
+    earnings
+  };
 }
 ```
 
-</CodeGroup>
+## Dashboard Navigation
 
-## Folders
+In addition to the API, you can navigate resources in the Vantio Dashboard:
 
-Simply put your MDX files in folders and update the paths in `docs.json`.
+1. **Programs** - View and manage all programs
+2. **Users** - Browse student ambassadors
+3. **Referrals** - Track signups and conversions
+4. **Posters** - Manage QR code posters
+5. **Impressions** - View scan analytics
+6. **Earnings** - Monitor commissions and payouts
 
-For example, to have a page at `https://yoursite.com/your-folder/your-page` you would make a folder called `your-folder` containing an MDX file called `your-page.mdx`.
+## Best Practices
 
-<Warning>
+1. **Start with programs** - Programs are the top-level organization
+2. **Use filters** - Narrow results to what you need
+3. **Follow relationships** - Use IDs to navigate between resources
+4. **Implement pagination** - Handle large datasets efficiently
+5. **Cache frequently accessed data** - Reduce API calls
 
-You cannot use `api` for the name of a folder unless you nest it inside another folder. Mintlify uses Next.js which reserves the top-level `api` folder for internal server calls. A folder name such as `api-reference` would be accepted.
+## Next Steps
 
-</Warning>
-
-```json Navigation With Folder
-"navigation": {
-  "tabs": [
-    {
-      "tab": "Docs",
-      "groups": [
-        {
-          "group": "Group Name",
-          "pages": ["your-folder/your-page"]
-        }
-      ]
-    }
-  ]
-}
-```
-
-## Hidden Pages
-
-MDX files not included in `docs.json` will not show up in the sidebar but are accessible through the search bar and by linking directly to them.
+- Explore the [API Reference](/api-reference/introduction) for detailed endpoint documentation
+- Check [Code Examples](/essentials/code) for navigation patterns
+- Review [Integration Patterns](/essentials/reusable-snippets) for reusable code

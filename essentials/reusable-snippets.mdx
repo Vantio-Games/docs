@@ -1,110 +1,388 @@
 ---
-title: Reusable Snippets
-description: Reusable, custom snippets to keep content in sync
+title: 'Integration Patterns'
+description: 'Reusable integration patterns and best practices for Vantio'
 icon: 'recycle'
 ---
 
-import SnippetIntro from '/snippets/snippet-intro.mdx';
+## Overview
 
-<SnippetIntro />
+This guide provides reusable integration patterns and code snippets you can use across your Vantio integration. These patterns follow best practices and handle common scenarios.
 
-## Creating a custom snippet
+## Referral Flow Pattern
 
-**Pre-condition**: You must create your snippet file in the `snippets` directory.
+Complete pattern for handling the referral flow from QR scan to earning:
 
-<Note>
-  Any page in the `snippets` directory will be treated as a snippet and will not
-  be rendered into a standalone page. If you want to create a standalone page
-  from the snippet, import the snippet into another file and call it as a
-  component.
-</Note>
+```javascript
+// patterns/referral-flow.js
+class ReferralFlowHandler {
+  constructor(vantioClient) {
+    this.client = vantioClient;
+  }
+  
+  async handleQRScan(qrCodeData) {
+    // QR scan creates an impression
+    // This is typically handled automatically by Vantio
+    // You receive the impression_id from the QR scan
+    return qrCodeData.impression_id;
+  }
+  
+  async handleSignup(impressionId, userData) {
+    // Create referral when user signs up
+    const referral = await this.client.createReferral({
+      impression_id: impressionId,
+      first_name: userData.firstName,
+      last_name: userData.lastName,
+      email: userData.email,
+      idempotency_key: `ref_${userData.userId}_${Date.now()}`
+    });
+    
+    return referral;
+  }
+  
+  async handlePurchase(referralId, orderData) {
+    // Create earning when referred customer makes purchase
+    const commissionRate = 0.10; // 10%
+    const amountInCents = Math.round(orderData.total * commissionRate * 100);
+    
+    const earning = await this.client.createEarning({
+      referral_id: referralId,
+      amount: amountInCents,
+      currency: 'USD',
+      type: 'purchase',
+      description: `Commission from order #${orderData.orderId}`,
+      metadata: {
+        order_id: orderData.orderId,
+        commission_rate: `${commissionRate * 100}%`
+      },
+      idempotency_key: `earn_${orderData.orderId}_${Date.now()}`
+    });
+    
+    // Update referral status to converted
+    await this.client.updateReferral(referralId, {
+      status: 'converted'
+    });
+    
+    return earning;
+  }
+}
 
-### Default export
+// Usage
+const flowHandler = new ReferralFlowHandler(vantioClient);
 
-1. Add content to your snippet file that you want to re-use across multiple
-   locations. Optionally, you can add variables that can be filled in via props
-   when you import the snippet.
+// 1. User scans QR code (impression created automatically)
+const impressionId = await flowHandler.handleQRScan(qrCodeData);
 
-```mdx snippets/my-snippet.mdx
-Hello world! This is my content I want to reuse across pages. My keyword of the
-day is {word}.
+// 2. User signs up
+const referral = await flowHandler.handleSignup(impressionId, {
+  userId: 'user_123',
+  firstName: 'John',
+  lastName: 'Doe',
+  email: 'john@example.com'
+});
+
+// 3. User makes purchase
+const earning = await flowHandler.handlePurchase(referral.id, {
+  orderId: 'order_456',
+  total: 100.00
+});
 ```
 
-<Warning>
-  The content that you want to reuse must be inside the `snippets` directory in
-  order for the import to work.
-</Warning>
+## Idempotency Pattern
 
-2. Import the snippet into your destination file.
+Ensure requests are idempotent to prevent duplicates:
 
-```mdx destination-file.mdx
----
-title: My title
-description: My Description
----
+```javascript
+// patterns/idempotency.js
+class IdempotentRequest {
+  constructor() {
+    this.processedKeys = new Set();
+  }
+  
+  generateKey(prefix, identifier) {
+    return `${prefix}_${identifier}_${Date.now()}`;
+  }
+  
+  async execute(key, requestFn) {
+    if (this.processedKeys.has(key)) {
+      console.log(`Request ${key} already processed, skipping`);
+      return null;
+    }
+    
+    try {
+      const result = await requestFn();
+      this.processedKeys.add(key);
+      return result;
+    } catch (error) {
+      // Remove key on error so it can be retried
+      this.processedKeys.delete(key);
+      throw error;
+    }
+  }
+}
 
-import MySnippet from '/snippets/path/to/my-snippet.mdx';
+// Usage
+const idempotent = new IdempotentRequest();
 
-## Header
-
-Lorem impsum dolor sit amet.
-
-<MySnippet word="bananas" />
+const key = idempotent.generateKey('earn', orderId);
+await idempotent.execute(key, async () => {
+  return await vantioClient.createEarning({
+    ...earningData,
+    idempotency_key: key
+  });
+});
 ```
 
-### Reusable variables
+## Error Handling Pattern
 
-1. Export a variable from your snippet file:
+Comprehensive error handling for API requests:
 
-```mdx snippets/path/to/custom-variables.mdx
-export const myName = 'my name';
+```javascript
+// patterns/error-handling.js
+class VantioError extends Error {
+  constructor(message, status, code) {
+    super(message);
+    this.status = status;
+    this.code = code;
+    this.name = 'VantioError';
+  }
+}
 
-export const myObject = { fruit: 'strawberries' };
+async function handleAPIRequest(requestFn) {
+  try {
+    return await requestFn();
+  } catch (error) {
+    if (error.response) {
+      const { status, data } = error.response;
+      
+      switch (status) {
+        case 400:
+          throw new VantioError(
+            data.message || 'Bad request',
+            status,
+            'BAD_REQUEST'
+          );
+        case 401:
+          throw new VantioError(
+            'Invalid or missing API key',
+            status,
+            'UNAUTHORIZED'
+          );
+        case 404:
+          throw new VantioError(
+            'Resource not found',
+            status,
+            'NOT_FOUND'
+          );
+        case 429:
+          throw new VantioError(
+            'Rate limit exceeded',
+            status,
+            'RATE_LIMIT'
+          );
+        default:
+          throw new VantioError(
+            data.message || 'API request failed',
+            status,
+            'UNKNOWN_ERROR'
+          );
+      }
+    }
+    
+    throw error;
+  }
+}
+
+// Usage
+try {
+  const referral = await handleAPIRequest(() =>
+    vantioClient.createReferral(referralData)
+  );
+} catch (error) {
+  if (error instanceof VantioError) {
+    console.error(`Vantio Error [${error.code}]: ${error.message}`);
+  } else {
+    console.error('Unexpected error:', error);
+  }
+}
 ```
 
-2. Import the snippet from your destination file and use the variable:
+## Retry Pattern
 
-```mdx destination-file.mdx
----
-title: My title
-description: My Description
----
+Retry failed requests with exponential backoff:
 
-import { myName, myObject } from '/snippets/path/to/custom-variables.mdx';
+```javascript
+// patterns/retry.js
+async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (attempt === maxRetries - 1) throw error;
+      
+      // Don't retry on client errors (4xx)
+      if (error.status >= 400 && error.status < 500) {
+        throw error;
+      }
+      
+      // Exponential backoff
+      const delay = baseDelay * Math.pow(2, attempt);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
 
-Hello, my name is {myName} and I like {myObject.fruit}.
-```
-
-### Reusable components
-
-1. Inside your snippet file, create a component that takes in props by exporting
-   your component in the form of an arrow function.
-
-```mdx snippets/custom-component.mdx
-export const MyComponent = ({ title }) => (
-  <div>
-    <h1>{title}</h1>
-    <p>... snippet content ...</p>
-  </div>
+// Usage
+const referral = await retryWithBackoff(() =>
+  vantioClient.createReferral(referralData)
 );
 ```
 
-<Warning>
-  MDX does not compile inside the body of an arrow function. Stick to HTML
-  syntax when you can or use a default export if you need to use MDX.
-</Warning>
+## Batch Processing Pattern
 
-2. Import the snippet into your destination file and pass in the props
+Process multiple items efficiently:
 
-```mdx destination-file.mdx
----
-title: My title
-description: My Description
----
+```javascript
+// patterns/batch-processing.js
+async function processBatch(items, processor, concurrency = 5) {
+  const results = [];
+  const errors = [];
+  
+  for (let i = 0; i < items.length; i += concurrency) {
+    const batch = items.slice(i, i + concurrency);
+    
+    const batchResults = await Promise.allSettled(
+      batch.map(item => processor(item))
+    );
+    
+    batchResults.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        results.push(result.value);
+      } else {
+        errors.push({
+          item: batch[index],
+          error: result.reason
+        });
+      }
+    });
+  }
+  
+  return { results, errors };
+}
 
-import { MyComponent } from '/snippets/custom-component.mdx';
+// Usage: Create multiple referrals
+const signups = [
+  { impressionId: 'imp_1', firstName: 'John', ... },
+  { impressionId: 'imp_2', firstName: 'Jane', ... },
+  // ... more signups
+];
 
-Lorem ipsum dolor sit amet.
-
-<MyComponent title={'Custom title'} />
+const { results, errors } = await processBatch(
+  signups,
+  async (signup) => {
+    return await vantioClient.createReferral({
+      impression_id: signup.impressionId,
+      first_name: signup.firstName,
+      last_name: signup.lastName,
+      email: signup.email
+    });
+  },
+  5 // Process 5 at a time
+);
 ```
+
+## Webhook Validation Pattern
+
+Validate and process webhooks securely:
+
+```javascript
+// patterns/webhook-validation.js
+const crypto = require('crypto');
+
+function validateWebhook(payload, signature, secret) {
+  const hmac = crypto.createHmac('sha256', secret);
+  const digest = hmac.update(JSON.stringify(payload)).digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(digest)
+  );
+}
+
+// Express.js webhook handler
+app.post('/webhooks/vantio', express.raw({ type: 'application/json' }), (req, res) => {
+  const signature = req.headers['x-vantio-signature'];
+  const secret = process.env.VANTIO_WEBHOOK_SECRET;
+  
+  if (!validateWebhook(req.body, signature, secret)) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+  
+  const event = JSON.parse(req.body);
+  // Process event...
+  
+  res.json({ received: true });
+});
+```
+
+## Caching Pattern
+
+Cache API responses to reduce calls:
+
+```javascript
+// patterns/caching.js
+class Cache {
+  constructor(ttl = 300000) { // 5 minutes default
+    this.cache = new Map();
+    this.ttl = ttl;
+  }
+  
+  get(key) {
+    const item = this.cache.get(key);
+    if (!item) return null;
+    
+    if (Date.now() > item.expires) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return item.value;
+  }
+  
+  set(key, value) {
+    this.cache.set(key, {
+      value,
+      expires: Date.now() + this.ttl
+    });
+  }
+}
+
+// Usage with API client
+const cache = new Cache(300000); // 5 minutes
+
+async function getCachedUser(userId) {
+  const cacheKey = `user_${userId}`;
+  let user = cache.get(cacheKey);
+  
+  if (!user) {
+    user = await vantioClient.getUser(userId);
+    cache.set(cacheKey, user);
+  }
+  
+  return user;
+}
+```
+
+## Best Practices
+
+1. **Always use idempotency keys** for POST requests
+2. **Implement retry logic** for transient failures
+3. **Cache frequently accessed data** to reduce API calls
+4. **Validate webhooks** to ensure security
+5. **Handle errors gracefully** with proper error types
+6. **Use batch processing** for multiple items
+7. **Monitor rate limits** and implement backoff
+
+## Next Steps
+
+- Review [Code Examples](/essentials/code) for more integration code
+- Check [API Reference](/api-reference/introduction) for endpoint details
+- Explore [Configuration Guide](/essentials/settings) for setup options

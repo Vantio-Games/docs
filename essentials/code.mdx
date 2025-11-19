@@ -1,37 +1,361 @@
 ---
-title: 'Code Blocks'
-description: 'Display inline code and code blocks'
-icon: 'code'
+title: 'Code Examples'
+description: 'Ready-to-use code examples for Vantio integration'
+icon: 'square-code'
 ---
 
-## Basic
+## Overview
 
-### Inline Code
+This guide provides copy-paste ready code examples for common Vantio integration scenarios. All examples assume you have your API key stored in an environment variable.
 
-To denote a `word` or `phrase` as code, enclose it in backticks (`).
+## Setup
 
+First, set your API key as an environment variable:
+
+```bash
+export VANTIO_API_KEY=sk_your_secret_key_here
 ```
-To denote a `word` or `phrase` as code, enclose it in backticks (`).
-```
 
-### Code Block
+## JavaScript/Node.js Examples
 
-Use [fenced code blocks](https://www.markdownguide.org/extended-syntax/#fenced-code-blocks) by enclosing code in three backticks and follow the leading ticks with the programming language of your snippet to get syntax highlighting. Optionally, you can also write the name of your code after the programming language.
+### Basic API Client
 
-```java HelloWorld.java
-class HelloWorld {
-    public static void main(String[] args) {
-        System.out.println("Hello, World!");
+```javascript
+// vantio-client.js
+const API_BASE_URL = 'http://localhost:3000/api/v1';
+const API_KEY = process.env.VANTIO_API_KEY;
+
+class VantioClient {
+  async request(endpoint, options = {}) {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'API request failed');
     }
+    
+    return await response.json();
+  }
+  
+  // Users
+  async listUsers(filters = {}) {
+    const params = new URLSearchParams(filters);
+    return this.request(`/users?${params.toString()}`);
+  }
+  
+  async getUser(userId) {
+    return this.request(`/users/${userId}`);
+  }
+  
+  // Referrals
+  async listReferrals(filters = {}) {
+    const params = new URLSearchParams(filters);
+    return this.request(`/referrals?${params.toString()}`);
+  }
+  
+  async createReferral(referralData) {
+    return this.request('/referrals', {
+      method: 'POST',
+      body: JSON.stringify(referralData)
+    });
+  }
+  
+  async updateReferral(referralId, updates) {
+    return this.request(`/referrals/${referralId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+  }
+  
+  // Earnings
+  async createEarning(earningData) {
+    return this.request('/earnings', {
+      method: 'POST',
+      body: JSON.stringify(earningData)
+    });
+  }
+  
+  async listEarnings(filters = {}) {
+    const params = new URLSearchParams(filters);
+    return this.request(`/earnings?${params.toString()}`);
+  }
+}
+
+module.exports = VantioClient;
+```
+
+### Usage Example
+
+```javascript
+const VantioClient = require('./vantio-client');
+const client = new VantioClient();
+
+// List all users
+const users = await client.listUsers({ programId: 'prog_123abc' });
+
+// Create a referral
+const referral = await client.createReferral({
+  impression_id: 'imp_123abc',
+  first_name: 'John',
+  last_name: 'Doe',
+  email: 'john.doe@example.com'
+});
+
+// Create an earning
+const earning = await client.createEarning({
+  referral_id: referral.id,
+  amount: 1000, // $10.00 in cents
+  currency: 'USD',
+  type: 'purchase',
+  idempotency_key: `earn_${Date.now()}`
+});
+```
+
+## Webhook Handler Example
+
+### Express.js Webhook Handler
+
+```javascript
+const express = require('express');
+const VantioClient = require('./vantio-client');
+const app = express();
+const client = new VantioClient();
+
+app.use(express.json());
+
+// Handle user signup webhook
+app.post('/webhooks/signup', async (req, res) => {
+  try {
+    const { impressionId, userData } = req.body;
+    
+    // Create referral when user signs up
+    const referral = await client.createReferral({
+      impression_id: impressionId,
+      first_name: userData.firstName,
+      last_name: userData.lastName,
+      email: userData.email,
+      idempotency_key: `ref_${userData.userId}_${Date.now()}`
+    });
+    
+    res.json({ success: true, referralId: referral.id });
+  } catch (error) {
+    console.error('Error creating referral:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Handle purchase webhook
+app.post('/webhooks/purchase', async (req, res) => {
+  try {
+    const { referralId, orderTotal, orderId } = req.body;
+    const commissionRate = 0.10; // 10%
+    const amountInCents = Math.round(orderTotal * commissionRate * 100);
+    
+    // Create earning when referred customer makes purchase
+    const earning = await client.createEarning({
+      referral_id: referralId,
+      amount: amountInCents,
+      currency: 'USD',
+      type: 'purchase',
+      description: `Commission from order #${orderId}`,
+      metadata: {
+        order_id: orderId,
+        commission_rate: '10%'
+      },
+      idempotency_key: `earn_${orderId}_${Date.now()}`
+    });
+    
+    res.json({ success: true, earningId: earning.id });
+  } catch (error) {
+    console.error('Error creating earning:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.listen(3000);
+```
+
+## Python Examples
+
+### Basic API Client
+
+```python
+# vantio_client.py
+import os
+import requests
+from typing import Dict, Optional
+
+class VantioClient:
+    def __init__(self):
+        self.base_url = 'http://localhost:3000/api/v1'
+        self.api_key = os.environ.get('VANTIO_API_KEY')
+        self.headers = {
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+    
+    def _request(self, method: str, endpoint: str, data: Optional[Dict] = None):
+        url = f'{self.base_url}{endpoint}'
+        response = requests.request(
+            method,
+            url,
+            headers=self.headers,
+            json=data
+        )
+        response.raise_for_status()
+        return response.json()
+    
+    def list_users(self, program_id: Optional[str] = None):
+        params = {}
+        if program_id:
+            params['programId'] = program_id
+        query_string = '&'.join([f'{k}={v}' for k, v in params.items()])
+        endpoint = f'/users?{query_string}' if query_string else '/users'
+        return self._request('GET', endpoint)
+    
+    def create_referral(self, impression_id: str, first_name: str, 
+                       last_name: str, email: str):
+        data = {
+            'impression_id': impression_id,
+            'first_name': first_name,
+            'last_name': last_name,
+            'email': email
+        }
+        return self._request('POST', '/referrals', data)
+    
+    def create_earning(self, referral_id: str, amount: int, 
+                      currency: str = 'USD', earning_type: str = 'purchase'):
+        data = {
+            'referral_id': referral_id,
+            'amount': amount,
+            'currency': currency,
+            'type': earning_type,
+            'idempotency_key': f'earn_{referral_id}_{int(time.time())}'
+        }
+        return self._request('POST', '/earnings', data)
+```
+
+### Usage Example
+
+```python
+from vantio_client import VantioClient
+import time
+
+client = VantioClient()
+
+# List users
+users = client.list_users(program_id='prog_123abc')
+
+# Create referral
+referral = client.create_referral(
+    impression_id='imp_123abc',
+    first_name='John',
+    last_name='Doe',
+    email='john.doe@example.com'
+)
+
+# Create earning
+earning = client.create_earning(
+    referral_id=referral['id'],
+    amount=1000,  # $10.00 in cents
+    currency='USD',
+    earning_type='purchase'
+)
+```
+
+## React/Next.js Examples
+
+### Custom Hook for Vantio API
+
+```javascript
+// hooks/useVantio.js
+import { useState, useEffect } from 'react';
+
+export function useVantio(endpoint, options = {}) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          `http://localhost:3000/api/v1${endpoint}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${process.env.NEXT_PUBLIC_VANTIO_API_KEY}`
+            },
+            ...options
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch');
+        }
+        
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, [endpoint]);
+  
+  return { data, loading, error };
 }
 ```
 
-````md
-```java HelloWorld.java
-class HelloWorld {
-    public static void main(String[] args) {
-        System.out.println("Hello, World!");
-    }
+### Component Example
+
+```javascript
+// components/ReferralList.js
+import { useVantio } from '../hooks/useVantio';
+
+export function ReferralList({ programId }) {
+  const { data, loading, error } = useVantio(
+    `/referrals?programId=${programId}`
+  );
+  
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  
+  return (
+    <div>
+      <h2>Referrals</h2>
+      {data.referrals.map(referral => (
+        <div key={referral.id}>
+          <p>{referral.first_name} {referral.last_name}</p>
+          <p>Status: {referral.status}</p>
+        </div>
+      ))}
+    </div>
+  );
 }
 ```
-````
+
+## Best Practices
+
+1. **Always use environment variables** for API keys
+2. **Implement error handling** for all API calls
+3. **Use idempotency keys** for POST requests
+4. **Cache responses** when appropriate
+5. **Handle rate limits** with retry logic
+
+## Next Steps
+
+- Explore the [API Reference](/api-reference/introduction) for all available endpoints
+- Check out [Integration Patterns](/essentials/reusable-snippets) for reusable code
+- Review [Configuration Guide](/essentials/settings) for setup options
