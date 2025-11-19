@@ -1,33 +1,63 @@
 ---
 title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+description: 'Son of Swan API documentation'
 ---
-
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
 
 ## Welcome
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
+The Son of Swan API provides programmatic access to manage your referral programs, track ambassadors, and monitor earnings. This API uses [OpenAPI 3.0](https://mintlify.com/docs/api-playground/openapi/setup) specification.
 
 <Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
+  title="Son of Swan API"
+  icon="api"
+  href="https://github.com/your-org/son-of-swan/blob/main/docs/api-reference/openapi.json"
 >
   View the OpenAPI specification file
 </Card>
 
+## Base URL
+
+The API base URL is:
+
+```
+http://localhost:3000
+```
+
+For production, replace with your production server URL.
+
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+All API endpoints require authentication using a Bearer token. Include your secret API key in the `Authorization` header:
 
-```json
-"security": [
-  {
-    "bearerAuth": []
-  }
-]
 ```
+Authorization: Bearer sk_...
+```
+
+The API key format is `sk_` followed by your secret key. You can find your API keys in your dashboard settings.
+
+<Warning>
+  Keep your API keys secure and never expose them in client-side code or public repositories.
+</Warning>
+
+## API Resources
+
+The API is organized into the following resource groups:
+
+- **Users** - Student directory within your programs
+- **Referrals** - Signups and conversions
+- **Posters** - Ambassador posters and placements
+- **Impressions** - QR scans and related activity
+- **Earnings** - Earnings from referrals
+
+## Rate Limits
+
+API rate limits apply to prevent abuse. Check response headers for rate limit information.
+
+## Error Handling
+
+The API uses standard HTTP status codes:
+
+- `200` - Success
+- `400` - Bad Request (invalid parameters)
+- `401` - Unauthorized (invalid or missing API key)
+- `404` - Not Found (resource doesn't exist)

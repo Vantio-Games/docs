@@ -1,0 +1,250 @@
+---
+title: 'Get Impression'
+openapi: 'GET /api/v1/impressions/{id}'
+---
+
+Retrieve detailed information about a specific QR code scan (impression) by its unique ID. Use this endpoint to fetch complete scan details including timestamp, device information, and associated poster.
+
+## Overview
+
+The Get Impression endpoint returns comprehensive information about a single QR code scan. This is useful for:
+
+- Viewing detailed scan information
+- Linking impressions to referrals
+- Debugging scan issues
+- Building impression detail pages
+- Tracking individual user journeys
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token in the Authorization header:
+
+```bash
+Authorization: Bearer sk_your_secret_key_here
+```
+
+## Path Parameters
+
+<ParamField body="id" type="string" required>
+  The unique identifier of the impression you want to retrieve. This ID is returned when a QR code is scanned and is used when creating referrals.
+  
+  **Example:** `imp_123abc`
+</ParamField>
+
+## Request Example
+
+<RequestExample>
+
+```bash
+curl -X GET "http://localhost:3000/api/v1/impressions/imp_123abc" \
+  -H "Authorization: Bearer sk_your_secret_key_here"
+```
+
+</RequestExample>
+
+## Response
+
+The API returns a detailed impression object:
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the impression. Use this ID when creating a referral.
+</ResponseField>
+
+<ResponseField name="poster_id" type="string" required>
+  ID of the poster whose QR code was scanned.
+</ResponseField>
+
+<ResponseField name="program_id" type="string" required>
+  ID of the program this impression belongs to.
+</ResponseField>
+
+<ResponseField name="student_id" type="string" required>
+  ID of the student ambassador who placed the poster.
+</ResponseField>
+
+<ResponseField name="scanned_at" type="string" required>
+  ISO 8601 timestamp of when the QR code was scanned.
+</ResponseField>
+
+<ResponseField name="user_agent" type="string">
+  User agent string of the device that scanned the QR code. Useful for identifying device type and browser.
+</ResponseField>
+
+<ResponseField name="ip_address" type="string">
+  IP address of the device that scanned the QR code (if available).
+</ResponseField>
+
+<ResponseField name="metadata" type="object">
+  Additional metadata about the scan, such as device type, location, or custom fields.
+</ResponseField>
+
+## Response Example
+
+<ResponseExample>
+
+```json
+{
+  "id": "imp_123abc",
+  "poster_id": "poster_123abc",
+  "program_id": "prog_123abc",
+  "student_id": "user_123abc",
+  "scanned_at": "2024-01-15T10:30:00Z",
+  "user_agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
+  "ip_address": "192.168.1.1",
+  "metadata": {
+    "device_type": "mobile",
+    "location": "campus_center",
+    "referrer": "direct"
+  }
+}
+```
+
+</ResponseExample>
+
+## Error Responses
+
+<ResponseField name="401" type="object">
+  **Unauthorized** - Invalid or missing API key
+  
+  ```json
+  {
+    "error": "Unauthorized",
+    "message": "Invalid or missing API key"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="404" type="object">
+  **Not Found** - The impression with the specified ID does not exist
+  
+  ```json
+  {
+    "error": "Not Found",
+    "message": "Impression not found"
+  }
+  ```
+</ResponseField>
+
+## Use Cases
+
+### Creating a Referral from an Impression
+
+When a user signs up after scanning a QR code, use the impression ID to create a referral:
+
+```javascript
+async function createReferralFromImpression(impressionId, signupData) {
+  // First, verify the impression exists
+  const impression = await getImpressionDetails(impressionId);
+  
+  // Then create the referral using the impression ID
+  const referral = await fetch('http://localhost:3000/api/v1/referrals', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      impression_id: impressionId,
+      first_name: signupData.firstName,
+      last_name: signupData.lastName,
+      email: signupData.email
+    })
+  });
+  
+  return await referral.json();
+}
+```
+
+### Viewing Impression Details
+
+Fetch impression information to display in a detail view:
+
+```javascript
+async function getImpressionDetails(impressionId) {
+  try {
+    const response = await fetch(
+      `http://localhost:3000/api/v1/impressions/${impressionId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`
+        }
+      }
+    );
+    
+    if (response.status === 404) {
+      throw new Error('Impression not found');
+    }
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch impression');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching impression:', error);
+    throw error;
+  }
+}
+```
+
+### Building Impression Detail Component
+
+Create a React component to display impression details:
+
+```javascript
+async function ImpressionDetail({ impressionId }) {
+  const [impression, setImpression] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    async function fetchImpression() {
+      try {
+        const response = await fetch(
+          `http://localhost:3000/api/v1/impressions/${impressionId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${API_KEY}`
+            }
+          }
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          setImpression(data);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchImpression();
+  }, [impressionId]);
+  
+  if (loading) return <div>Loading...</div>;
+  if (!impression) return <div>Impression not found</div>;
+  
+  return (
+    <div>
+      <h1>QR Code Scan Details</h1>
+      <p>Scanned at: {new Date(impression.scanned_at).toLocaleString()}</p>
+      <p>Poster ID: {impression.poster_id}</p>
+      <p>Device: {impression.user_agent || 'Unknown'}</p>
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+1. **Link impressions to referrals** - Always use the impression ID when creating referrals
+2. **Cache impression data** - Impression information doesn't change after creation
+3. **Handle 404 errors** - Always check if the impression exists
+4. **Track device information** - Use user_agent and metadata to analyze device types
+5. **Monitor scan timing** - Use scanned_at to analyze peak scan times
+
+## Rate Limits
+
+This endpoint is subject to rate limiting. Check response headers for rate limit information.
+

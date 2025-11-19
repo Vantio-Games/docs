@@ -1,0 +1,375 @@
+---
+title: 'Create Earning'
+openapi: 'POST /api/v1/earnings'
+---
+
+Create a new earning when a referred customer spends money on your platform. This endpoint is typically called when processing a purchase, subscription, or other transaction from a referred customer.
+
+## Overview
+
+The Create Earning endpoint allows you to record commissions and earnings for student ambassadors when their referrals make purchases. This is a critical endpoint that:
+
+- Links earnings to specific referrals
+- Tracks commission amounts and currency
+- Records earning type and description
+- Enables payout processing
+- Supports idempotent requests to prevent duplicates
+
+Use this endpoint to:
+
+- Record commissions from customer purchases
+- Track subscription-based earnings
+- Create recurring earnings
+- Process one-time payments
+- Enable automated payout systems
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token in the Authorization header:
+
+```bash
+Authorization: Bearer sk_your_secret_key_here
+```
+
+## Request Body
+
+<ParamField body="referral_id" type="string" required>
+  **Required.** The ID of the referral that generated this earning. This links the earning back to the original signup and ambassador.
+  
+  **Example:** `ref_123abc`
+  
+  **Note:** The referral must exist in your system and typically should have a status of `converted`.
+</ParamField>
+
+<ParamField body="amount" type="number" required>
+  **Required.** Amount in cents. For example, to represent $10.00, send `1000`. To represent $5.50, send `550`.
+  
+  **Example:** `1000` (represents $10.00)
+  
+  **Important:** Always specify amounts in the smallest currency unit (cents for USD).
+</ParamField>
+
+<ParamField body="currency" type="string" default="USD" required={false}>
+  Currency code in ISO 4217 format. Defaults to "USD" if not specified.
+  
+  **Examples:** `USD`, `EUR`, `GBP`, `CAD`
+  
+  **Note:** Ensure the currency matches your program's payout currency.
+</ParamField>
+
+<ParamField body="type" type="string" required={false}>
+  Type of earning. Use this to categorize different earning types for reporting and analytics.
+  
+  **Examples:**
+  - `purchase` - One-time purchase commission
+  - `subscription` - Subscription-based commission
+  - `recurring` - Recurring payment commission
+  - `bonus` - Bonus or special promotion
+  
+  **Example:** `purchase`
+</ParamField>
+
+<ParamField body="description" type="string" required={false}>
+  Human-readable description of the earning. This helps ambassadors understand what the earning is for.
+  
+  **Example:** `Commission from customer purchase - Order #12345`
+</ParamField>
+
+<ParamField body="metadata" type="object" required={false}>
+  Optional additional metadata about the earning. Use this to store custom information like order IDs, transaction IDs, commission rates, or other relevant data.
+  
+  **Example:**
+  ```json
+  {
+    "order_id": "order_12345",
+    "transaction_id": "txn_67890",
+    "commission_rate": "10%",
+    "product_name": "Premium Subscription"
+  }
+  ```
+</ParamField>
+
+<ParamField body="idempotency_key" type="string" required={false}>
+  Optional unique key for idempotent requests. If you send the same `idempotency_key` within a short time window, the API will return the same earning instead of creating a duplicate. This is essential for retry logic and webhook processing.
+  
+  **Example:** `earn_20240115_order12345`
+  
+  **Best Practice:** Use a combination of order/transaction ID and timestamp to ensure uniqueness.
+</ParamField>
+
+## Request Example
+
+<RequestExample>
+
+```bash
+# Create an earning from a purchase
+curl -X POST "http://localhost:3000/api/v1/earnings" \
+  -H "Authorization: Bearer sk_your_secret_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "referral_id": "ref_123abc",
+    "amount": 1000,
+    "currency": "USD",
+    "type": "purchase",
+    "description": "Commission from customer purchase - Order #12345",
+    "metadata": {
+      "order_id": "order_12345",
+      "commission_rate": "10%"
+    },
+    "idempotency_key": "earn_order12345_20240115"
+  }'
+
+# Create a subscription earning
+curl -X POST "http://localhost:3000/api/v1/earnings" \
+  -H "Authorization: Bearer sk_your_secret_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "referral_id": "ref_123abc",
+    "amount": 500,
+    "currency": "USD",
+    "type": "subscription",
+    "description": "Monthly subscription commission",
+    "metadata": {
+      "subscription_id": "sub_123",
+      "commission_rate": "5%"
+    },
+    "idempotency_key": "earn_sub123_20240115"
+  }'
+```
+
+</RequestExample>
+
+## Response
+
+On success, the API returns the created earning object:
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the newly created earning.
+</ResponseField>
+
+<ResponseField name="referral_id" type="string" required>
+  The referral ID that was provided in the request.
+</ResponseField>
+
+<ResponseField name="amount" type="number" required>
+  Amount in cents.
+</ResponseField>
+
+<ResponseField name="currency" type="string" required>
+  Currency code.
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  Type of earning (if provided).
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Description of the earning (if provided).
+</ResponseField>
+
+<ResponseField name="status" type="string" required>
+  Initial status of the earning, typically `pending`.
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp of when the earning was created.
+</ResponseField>
+
+## Response Example
+
+<ResponseExample>
+
+```json
+{
+  "id": "earn_789ghi",
+  "referral_id": "ref_123abc",
+  "amount": 1000,
+  "currency": "USD",
+  "type": "purchase",
+  "description": "Commission from customer purchase - Order #12345",
+  "status": "pending",
+  "created_at": "2024-01-15T10:30:00Z",
+  "metadata": {
+    "order_id": "order_12345",
+    "commission_rate": "10%"
+  }
+}
+```
+
+</ResponseExample>
+
+## Error Responses
+
+<ResponseField name="400" type="object">
+  **Bad Request** - Invalid request data
+  
+  ```json
+  {
+    "error": "Bad Request",
+    "message": "Missing required field: referral_id"
+  }
+  ```
+  
+  Common causes:
+  - Missing required fields (referral_id, amount)
+  - Invalid amount (must be a positive number)
+  - Invalid referral_id (referral doesn't exist)
+  - Invalid currency code
+</ResponseField>
+
+<ResponseField name="401" type="object">
+  **Unauthorized** - Invalid or missing API key
+  
+  ```json
+  {
+    "error": "Unauthorized",
+    "message": "Invalid or missing API key"
+  }
+  ```
+</ResponseField>
+
+## Use Cases
+
+### Processing Purchase Webhooks
+
+When a referred customer makes a purchase, create an earning:
+
+```javascript
+async function handlePurchaseWebhook(orderData, referralId) {
+  try {
+    // Calculate commission (e.g., 10% of order total)
+    const commissionRate = 0.10;
+    const amountInCents = Math.round(orderData.total * commissionRate * 100);
+    
+    const response = await fetch('http://localhost:3000/api/v1/earnings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        referral_id: referralId,
+        amount: amountInCents,
+        currency: 'USD',
+        type: 'purchase',
+        description: `Commission from order #${orderData.orderId}`,
+        metadata: {
+          order_id: orderData.orderId,
+          transaction_id: orderData.transactionId,
+          commission_rate: `${commissionRate * 100}%`,
+          order_total: orderData.total
+        },
+        idempotency_key: `earn_${orderData.orderId}_${Date.now()}`
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message);
+    }
+    
+    const earning = await response.json();
+    console.log('Earning created:', earning.id);
+    return earning;
+  } catch (error) {
+    console.error('Error creating earning:', error);
+    throw error;
+  }
+}
+```
+
+### Creating Subscription Earnings
+
+Process recurring subscription commissions:
+
+```javascript
+async function createSubscriptionEarning(subscriptionData, referralId) {
+  const commissionRate = 0.05; // 5% for subscriptions
+  const amountInCents = Math.round(subscriptionData.monthlyAmount * commissionRate * 100);
+  
+  const response = await fetch('http://localhost:3000/api/v1/earnings', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      referral_id: referralId,
+      amount: amountInCents,
+      currency: 'USD',
+      type: 'subscription',
+      description: `Monthly subscription commission - ${subscriptionData.planName}`,
+      metadata: {
+        subscription_id: subscriptionData.subscriptionId,
+        commission_rate: '5%',
+        plan_name: subscriptionData.planName
+      },
+      idempotency_key: `earn_sub_${subscriptionData.subscriptionId}_${subscriptionData.billingPeriod}`
+    })
+  });
+  
+  return await response.json();
+}
+```
+
+### Idempotent Earning Creation
+
+Use idempotency keys to prevent duplicate earnings:
+
+```javascript
+async function createEarningSafely(earningData, orderId) {
+  const idempotencyKey = `earn_${orderId}_${earningData.referral_id}`;
+  
+  const response = await fetch('http://localhost:3000/api/v1/earnings', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      ...earningData,
+      idempotency_key: idempotencyKey
+    })
+  });
+  
+  // If the earning already exists (idempotent), the API returns the existing one
+  return await response.json();
+}
+```
+
+## Best Practices
+
+1. **Always use idempotency keys** - Critical for webhook processing and retry logic
+2. **Validate referral status** - Ensure referral is `converted` before creating earnings
+3. **Store amounts in cents** - Always convert dollar amounts to cents (multiply by 100)
+4. **Include metadata** - Store order IDs, transaction IDs, and commission rates for tracking
+5. **Use descriptive types** - Categorize earnings for better reporting
+6. **Handle errors gracefully** - Check for 400 errors and provide user-friendly messages
+7. **Link to external systems** - Store reference IDs in metadata for payment processing
+
+## Amount Conversion
+
+Remember to convert dollar amounts to cents:
+
+```javascript
+// Converting $10.00 to cents
+const dollars = 10.00;
+const cents = Math.round(dollars * 100); // 1000
+
+// Converting cents back to dollars for display
+const displayAmount = cents / 100; // 10.00
+```
+
+## Workflow
+
+The typical earning creation workflow:
+
+1. Referred customer makes a purchase → **Earning created** (this endpoint)
+2. Earning status is `pending` → Ready for processing
+3. Earning status changes to `processing` → Payout initiated
+4. Earning status changes to `paid` → Commission paid to ambassador
+
+## Rate Limits
+
+This endpoint is subject to rate limiting. Check response headers for rate limit information.
+

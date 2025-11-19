@@ -1,0 +1,248 @@
+---
+title: 'Get Poster'
+openapi: 'GET /api/v1/posters/{id}'
+---
+
+Retrieve detailed information about a specific poster placement by its unique ID. Use this endpoint to fetch complete poster details including QR code URL, location, and associated metadata.
+
+## Overview
+
+The Get Poster endpoint returns comprehensive information about a single poster placement. This is useful for:
+
+- Displaying poster details in dashboards
+- Viewing QR code information
+- Checking poster placement details
+- Building poster detail pages
+- Linking posters to impressions and referrals
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token in the Authorization header:
+
+```bash
+Authorization: Bearer sk_your_secret_key_here
+```
+
+## Path Parameters
+
+<ParamField body="id" type="string" required>
+  The unique identifier of the poster you want to retrieve. This ID is returned when you list posters or create a new poster.
+  
+  **Example:** `poster_123abc`
+</ParamField>
+
+## Request Example
+
+<RequestExample>
+
+```bash
+curl -X GET "http://localhost:3000/api/v1/posters/poster_123abc" \
+  -H "Authorization: Bearer sk_your_secret_key_here"
+```
+
+</RequestExample>
+
+## Response
+
+The API returns a detailed poster object:
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the poster.
+</ResponseField>
+
+<ResponseField name="program_id" type="string" required>
+  ID of the program this poster belongs to.
+</ResponseField>
+
+<ResponseField name="student_id" type="string" required>
+  ID of the student ambassador who placed this poster.
+</ResponseField>
+
+<ResponseField name="qr_code_url" type="string" required>
+  URL to the QR code image for this poster. Use this URL to display or download the QR code.
+</ResponseField>
+
+<ResponseField name="location" type="string">
+  Physical location where the poster was placed, if provided.
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp of when the poster was created.
+</ResponseField>
+
+<ResponseField name="updated_at" type="string">
+  ISO 8601 timestamp of when the poster was last updated.
+</ResponseField>
+
+<ResponseField name="metadata" type="object">
+  Additional metadata about the poster placement, such as poster type, placement date, or custom fields.
+</ResponseField>
+
+## Response Example
+
+<ResponseExample>
+
+```json
+{
+  "id": "poster_123abc",
+  "program_id": "prog_123abc",
+  "student_id": "user_123abc",
+  "qr_code_url": "https://example.com/qr-codes/poster_123abc.png",
+  "location": "Campus Center - Main Entrance",
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:30:00Z",
+  "metadata": {
+    "poster_type": "standard",
+    "placement_date": "2024-01-15",
+    "dimensions": "11x17",
+    "notes": "Placed near main entrance"
+  }
+}
+```
+
+</ResponseExample>
+
+## Error Responses
+
+<ResponseField name="401" type="object">
+  **Unauthorized** - Invalid or missing API key
+  
+  ```json
+  {
+    "error": "Unauthorized",
+    "message": "Invalid or missing API key"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="404" type="object">
+  **Not Found** - The poster with the specified ID does not exist
+  
+  ```json
+  {
+    "error": "Not Found",
+    "message": "Poster not found"
+  }
+  ```
+</ResponseField>
+
+## Use Cases
+
+### Displaying Poster Details
+
+Fetch poster information to display in a detail view:
+
+```javascript
+async function getPosterDetails(posterId) {
+  try {
+    const response = await fetch(
+      `http://localhost:3000/api/v1/posters/${posterId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`
+        }
+      }
+    );
+    
+    if (response.status === 404) {
+      throw new Error('Poster not found');
+    }
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch poster');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching poster:', error);
+    throw error;
+  }
+}
+```
+
+### Downloading QR Code
+
+Get the QR code URL and download it:
+
+```javascript
+async function downloadPosterQRCode(posterId) {
+  const poster = await getPosterDetails(posterId);
+  
+  // Use the qr_code_url to download or display the QR code
+  const qrCodeUrl = poster.qr_code_url;
+  
+  // Example: Open in new window
+  window.open(qrCodeUrl, '_blank');
+  
+  // Or download it
+  const response = await fetch(qrCodeUrl);
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `poster-${posterId}-qr.png`;
+  a.click();
+}
+```
+
+### Building Poster Detail Component
+
+Create a React component to display poster details:
+
+```javascript
+async function PosterDetail({ posterId }) {
+  const [poster, setPoster] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    async function fetchPoster() {
+      try {
+        const response = await fetch(
+          `http://localhost:3000/api/v1/posters/${posterId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${API_KEY}`
+            }
+          }
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          setPoster(data);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchPoster();
+  }, [posterId]);
+  
+  if (loading) return <div>Loading...</div>;
+  if (!poster) return <div>Poster not found</div>;
+  
+  return (
+    <div>
+      <h1>Poster {poster.id}</h1>
+      <p>Location: {poster.location || 'Not specified'}</p>
+      <p>Created: {new Date(poster.created_at).toLocaleDateString()}</p>
+      <img src={poster.qr_code_url} alt="QR Code" />
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+1. **Cache poster data** - Poster information doesn't change frequently
+2. **Handle 404 errors** - Always check if the poster exists
+3. **Use QR code URLs** - The QR code URL can be used directly in img tags or downloaded
+4. **Track locations** - Use the location field to organize posters geographically
+5. **Link to impressions** - Use poster IDs to filter impressions and track scan rates
+
+## Rate Limits
+
+This endpoint is subject to rate limiting. Check response headers for rate limit information.
+

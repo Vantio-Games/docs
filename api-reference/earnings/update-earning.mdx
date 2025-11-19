@@ -1,0 +1,351 @@
+---
+title: 'Update Earning'
+openapi: 'PUT /api/v1/earnings/{id}'
+---
+
+Update an existing earning's information. Use this endpoint to change earning status, update payout references, or modify metadata.
+
+## Overview
+
+The Update Earning endpoint allows you to modify earning information after it has been created. Common use cases include:
+
+- Updating earning status (e.g., from `pending` to `processing` to `paid`)
+- Adding payout reference IDs (e.g., Stripe payout ID)
+- Updating metadata with transaction information
+- Marking earnings as failed if payout fails
+- Correcting earning amounts or descriptions
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token in the Authorization header:
+
+```bash
+Authorization: Bearer sk_your_secret_key_here
+```
+
+## Path Parameters
+
+<ParamField body="id" type="string" required>
+  The unique identifier of the earning you want to update.
+  
+  **Example:** `earn_123abc`
+</ParamField>
+
+## Request Body
+
+All fields in the request body are optional. Only include the fields you want to update.
+
+<ParamField body="amount" type="number" required={false}>
+  Update the amount in cents. Use this to correct amounts if needed.
+  
+  **Example:** `1500` (represents $15.00)
+</ParamField>
+
+<ParamField body="currency" type="string" required={false}>
+  Update the currency code (ISO 4217 format).
+  
+  **Example:** `USD`
+</ParamField>
+
+<ParamField body="type" type="string" required={false}>
+  Update the type of earning.
+  
+  **Example:** `purchase`, `subscription`, `recurring`
+</ParamField>
+
+<ParamField body="description" type="string" required={false}>
+  Update the description of the earning.
+  
+  **Example:** `Commission from customer purchase - Order #12345`
+</ParamField>
+
+<ParamField body="status" type="string" required={false}>
+  Update the earning status. Valid values are:
+  - `pending` - Earning created but not yet processed
+  - `processing` - Earning is being processed for payout
+  - `paid` - Earning has been paid out
+  - `failed` - Earning payment failed
+  
+  **Example:** `paid`
+</ParamField>
+
+<ParamField body="reference_id" type="string" required={false}>
+  Update the external reference ID (e.g., Stripe payout ID, transaction ID). Typically set when status changes to `processing` or `paid`.
+  
+  **Example:** `payout_456def`
+</ParamField>
+
+<ParamField body="metadata" type="object" required={false}>
+  Update additional metadata. This will merge with existing metadata or replace it depending on your API configuration.
+  
+  **Example:**
+  ```json
+  {
+    "order_id": "order_12345",
+    "payout_id": "payout_456def",
+    "processed_at": "2024-01-20T14:20:00Z"
+  }
+  ```
+</ParamField>
+
+## Request Example
+
+<RequestExample>
+
+```bash
+# Update earning status to processing
+curl -X PUT "http://localhost:3000/api/v1/earnings/earn_123abc" \
+  -H "Authorization: Bearer sk_your_secret_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "processing"
+  }'
+
+# Update status to paid with payout reference
+curl -X PUT "http://localhost:3000/api/v1/earnings/earn_123abc" \
+  -H "Authorization: Bearer sk_your_secret_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "paid",
+    "reference_id": "payout_456def",
+    "metadata": {
+      "payout_id": "payout_456def",
+      "processed_at": "2024-01-20T14:20:00Z"
+    }
+  }'
+```
+
+</RequestExample>
+
+## Response
+
+On success, the API returns the updated earning object:
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the earning.
+</ResponseField>
+
+<ResponseField name="referral_id" type="string" required>
+  ID of the referral that generated this earning.
+</ResponseField>
+
+<ResponseField name="amount" type="number" required>
+  Updated amount in cents (if provided).
+</ResponseField>
+
+<ResponseField name="currency" type="string" required>
+  Updated currency code (if provided).
+</ResponseField>
+
+<ResponseField name="status" type="string" required>
+  Updated status (if provided).
+</ResponseField>
+
+<ResponseField name="reference_id" type="string">
+  Updated reference ID (if provided).
+</ResponseField>
+
+<ResponseField name="updated_at" type="string" required>
+  ISO 8601 timestamp of when the earning was last updated.
+</ResponseField>
+
+## Response Example
+
+<ResponseExample>
+
+```json
+{
+  "id": "earn_123abc",
+  "referral_id": "ref_123abc",
+  "amount": 1000,
+  "currency": "USD",
+  "type": "purchase",
+  "description": "Commission from customer purchase - Order #12345",
+  "status": "paid",
+  "reference_id": "payout_456def",
+  "created_at": "2024-01-15T10:30:00Z",
+  "paid_at": "2024-01-20T14:20:00Z",
+  "updated_at": "2024-01-20T14:20:00Z",
+  "metadata": {
+    "order_id": "order_12345",
+    "payout_id": "payout_456def",
+    "processed_at": "2024-01-20T14:20:00Z"
+  }
+}
+```
+
+</ResponseExample>
+
+## Error Responses
+
+<ResponseField name="400" type="object">
+  **Bad Request** - Invalid request data
+  
+  ```json
+  {
+    "error": "Bad Request",
+    "message": "Invalid status value. Must be one of: pending, processing, paid, failed"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="401" type="object">
+  **Unauthorized** - Invalid or missing API key
+  
+  ```json
+  {
+    "error": "Unauthorized",
+    "message": "Invalid or missing API key"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="404" type="object">
+  **Not Found** - The earning with the specified ID does not exist
+  
+  ```json
+  {
+    "error": "Not Found",
+    "message": "Earning not found"
+  }
+  ```
+</ResponseField>
+
+## Use Cases
+
+### Processing Payouts
+
+When initiating a payout, update the earning status:
+
+```javascript
+async function processPayout(earningId, payoutId) {
+  const response = await fetch(
+    `http://localhost:3000/api/v1/earnings/${earningId}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: 'processing',
+        reference_id: payoutId,
+        metadata: {
+          payout_id: payoutId,
+          processing_started_at: new Date().toISOString()
+        }
+      })
+    }
+  );
+  
+  return await response.json();
+}
+```
+
+### Marking Earnings as Paid
+
+After successful payout, mark the earning as paid:
+
+```javascript
+async function markEarningAsPaid(earningId, payoutId) {
+  const response = await fetch(
+    `http://localhost:3000/api/v1/earnings/${earningId}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: 'paid',
+        reference_id: payoutId,
+        metadata: {
+          payout_id: payoutId,
+          paid_at: new Date().toISOString()
+        }
+      })
+    }
+  );
+  
+  return await response.json();
+}
+```
+
+### Handling Failed Payouts
+
+If a payout fails, mark the earning as failed:
+
+```javascript
+async function markEarningAsFailed(earningId, errorMessage) {
+  const response = await fetch(
+    `http://localhost:3000/api/v1/earnings/${earningId}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: 'failed',
+        metadata: {
+          failure_reason: errorMessage,
+          failed_at: new Date().toISOString()
+        }
+      })
+    }
+  );
+  
+  return await response.json();
+}
+```
+
+### Correcting Earning Amounts
+
+If an amount needs to be corrected:
+
+```javascript
+async function correctEarningAmount(earningId, correctAmountInCents) {
+  const response = await fetch(
+    `http://localhost:3000/api/v1/earnings/${earningId}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        amount: correctAmountInCents,
+        metadata: {
+          corrected_at: new Date().toISOString(),
+          correction_reason: 'Amount adjustment'
+        }
+      })
+    }
+  );
+  
+  return await response.json();
+}
+```
+
+## Best Practices
+
+1. **Update status carefully** - Status changes should reflect actual payout events
+2. **Store payout references** - Always include reference_id when processing payouts
+3. **Track status transitions** - Use metadata to log when and why status changes
+4. **Handle failures gracefully** - Mark earnings as failed and store error messages
+5. **Validate status values** - Ensure status values are valid before sending
+6. **Link to external systems** - Store payout IDs in reference_id and metadata
+
+## Status Workflow
+
+Typical earning status progression:
+
+1. `pending` → Earning created, ready for processing
+2. `processing` → Payout initiated, payment being processed
+3. `paid` → Payout completed successfully
+4. `failed` → Payout failed (can happen at processing stage)
+
+## Rate Limits
+
+This endpoint is subject to rate limiting. Check response headers for rate limit information.
+

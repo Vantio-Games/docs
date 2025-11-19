@@ -1,0 +1,352 @@
+---
+title: 'Update Referral'
+openapi: 'PUT /api/v1/referrals/{id}'
+---
+
+Update an existing referral's information. Use this endpoint to change referral status, update contact information, or modify metadata.
+
+## Overview
+
+The Update Referral endpoint allows you to modify referral information after it has been created. Common use cases include:
+
+- Updating referral status (e.g., from `pending` to `converted`)
+- Correcting contact information
+- Adding verification timestamps
+- Updating metadata
+- Marking referrals as verified or rejected
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token in the Authorization header:
+
+```bash
+Authorization: Bearer sk_your_secret_key_here
+```
+
+## Path Parameters
+
+<ParamField body="id" type="string" required>
+  The unique identifier of the referral you want to update.
+  
+  **Example:** `ref_123abc`
+</ParamField>
+
+## Request Body
+
+All fields in the request body are optional. Only include the fields you want to update.
+
+<ParamField body="first_name" type="string" required={false}>
+  Update the first name of the referred person.
+  
+  **Example:** `John`
+</ParamField>
+
+<ParamField body="last_name" type="string" required={false}>
+  Update the last name of the referred person.
+  
+  **Example:** `Doe`
+</ParamField>
+
+<ParamField body="email" type="string" required={false}>
+  Update the email address of the referred person.
+  
+  **Example:** `john.doe@example.com`
+</ParamField>
+
+<ParamField body="profile_picture" type="string" required={false}>
+  Update the URL to the profile picture.
+  
+  **Example:** `https://example.com/profiles/john-doe.jpg`
+</ParamField>
+
+<ParamField body="status" type="string" required={false}>
+  Update the referral status. Valid values are:
+  - `pending` - Referral created but not yet converted
+  - `converted` - Referral has converted (made a purchase/subscription)
+  - `verified` - Referral has been verified
+  - `rejected` - Referral was rejected
+  
+  **Example:** `converted`
+</ParamField>
+
+<ParamField body="verified_at" type="string" required={false}>
+  ISO 8601 timestamp of when the referral was verified. Typically set when status changes to `verified`.
+  
+  **Example:** `2024-01-16T14:20:00Z`
+</ParamField>
+
+<ParamField body="metadata" type="object" required={false}>
+  Update additional metadata. This will merge with existing metadata or replace it depending on your API configuration.
+  
+  **Example:**
+  ```json
+  {
+    "source": "poster_qr_code",
+    "location": "campus_center",
+    "notes": "Verified by admin"
+  }
+  ```
+</ParamField>
+
+## Request Example
+
+<RequestExample>
+
+```bash
+# Update referral status to converted
+curl -X PUT "http://localhost:3000/api/v1/referrals/ref_123abc" \
+  -H "Authorization: Bearer sk_your_secret_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "converted"
+  }'
+
+# Update multiple fields
+curl -X PUT "http://localhost:3000/api/v1/referrals/ref_123abc" \
+  -H "Authorization: Bearer sk_your_secret_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "verified",
+    "verified_at": "2024-01-16T14:20:00Z",
+    "metadata": {
+      "verified_by": "admin_123",
+      "verification_notes": "Manual verification completed"
+    }
+  }'
+```
+
+</RequestExample>
+
+## Response
+
+On success, the API returns the updated referral object:
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the referral.
+</ResponseField>
+
+<ResponseField name="impression_id" type="string" required>
+  ID of the impression that led to this referral.
+</ResponseField>
+
+<ResponseField name="first_name" type="string" required>
+  Updated first name (if provided).
+</ResponseField>
+
+<ResponseField name="last_name" type="string" required>
+  Updated last name (if provided).
+</ResponseField>
+
+<ResponseField name="email" type="string" required>
+  Updated email (if provided).
+</ResponseField>
+
+<ResponseField name="status" type="string" required>
+  Updated status (if provided).
+</ResponseField>
+
+<ResponseField name="verified_at" type="string">
+  Updated verification timestamp (if provided).
+</ResponseField>
+
+<ResponseField name="updated_at" type="string" required>
+  ISO 8601 timestamp of when the referral was last updated.
+</ResponseField>
+
+## Response Example
+
+<ResponseExample>
+
+```json
+{
+  "id": "ref_123abc",
+  "impression_id": "imp_456def",
+  "first_name": "Alice",
+  "last_name": "Johnson",
+  "email": "alice.johnson@example.com",
+  "status": "converted",
+  "program_id": "prog_123abc",
+  "student_id": "user_123abc",
+  "created_at": "2024-01-15T10:30:00Z",
+  "verified_at": "2024-01-16T14:20:00Z",
+  "updated_at": "2024-01-16T15:30:00Z",
+  "metadata": {
+    "source": "poster_qr_code",
+    "location": "campus_center"
+  }
+}
+```
+
+</ResponseExample>
+
+## Error Responses
+
+<ResponseField name="400" type="object">
+  **Bad Request** - Invalid request data
+  
+  ```json
+  {
+    "error": "Bad Request",
+    "message": "Invalid status value. Must be one of: pending, converted, verified, rejected"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="401" type="object">
+  **Unauthorized** - Invalid or missing API key
+  
+  ```json
+  {
+    "error": "Unauthorized",
+    "message": "Invalid or missing API key"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="404" type="object">
+  **Not Found** - The referral with the specified ID does not exist
+  
+  ```json
+  {
+    "error": "Not Found",
+    "message": "Referral not found"
+  }
+  ```
+</ResponseField>
+
+## Use Cases
+
+### Marking Referral as Converted
+
+When a referred customer makes a purchase, update the referral status:
+
+```javascript
+async function markReferralAsConverted(referralId) {
+  const response = await fetch(
+    `http://localhost:3000/api/v1/referrals/${referralId}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: 'converted'
+      })
+    }
+  );
+  
+  if (!response.ok) {
+    throw new Error('Failed to update referral');
+  }
+  
+  return await response.json();
+}
+```
+
+### Verifying a Referral
+
+Mark a referral as verified with a timestamp:
+
+```javascript
+async function verifyReferral(referralId, verifiedBy) {
+  const response = await fetch(
+    `http://localhost:3000/api/v1/referrals/${referralId}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: 'verified',
+        verified_at: new Date().toISOString(),
+        metadata: {
+          verified_by: verifiedBy,
+          verification_date: new Date().toISOString()
+        }
+      })
+    }
+  );
+  
+  return await response.json();
+}
+```
+
+### Rejecting Invalid Referrals
+
+Mark a referral as rejected if it doesn't meet criteria:
+
+```javascript
+async function rejectReferral(referralId, reason) {
+  const response = await fetch(
+    `http://localhost:3000/api/v1/referrals/${referralId}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: 'rejected',
+        metadata: {
+          rejection_reason: reason,
+          rejected_at: new Date().toISOString()
+        }
+      })
+    }
+  );
+  
+  return await response.json();
+}
+```
+
+### Updating Contact Information
+
+Correct or update referral contact details:
+
+```javascript
+async function updateReferralContact(referralId, updates) {
+  const response = await fetch(
+    `http://localhost:3000/api/v1/referrals/${referralId}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        first_name: updates.firstName,
+        last_name: updates.lastName,
+        email: updates.email,
+        profile_picture: updates.profilePicture
+      })
+    }
+  );
+  
+  return await response.json();
+}
+```
+
+## Best Practices
+
+1. **Update status carefully** - Status changes should reflect actual business events
+2. **Set verified_at when verifying** - Always include a timestamp when marking as verified
+3. **Use metadata for context** - Store additional context in metadata rather than status alone
+4. **Validate status values** - Ensure status values are valid before sending
+5. **Handle 404 errors** - Check if referral exists before updating
+6. **Track who made changes** - Include admin/user IDs in metadata when updating
+
+## Status Workflow
+
+Typical referral status progression:
+
+1. `pending` → Created but not yet converted
+2. `converted` → Referred customer made a purchase
+3. `verified` → Conversion verified by admin
+4. `rejected` → Referral doesn't meet criteria (can happen at any stage)
+
+## Rate Limits
+
+This endpoint is subject to rate limiting. Check response headers for rate limit information.
+

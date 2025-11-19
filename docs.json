@@ -44,12 +44,42 @@
             ]
           },
           {
-            "group": "Endpoint Examples",
+            "group": "Users",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/users/list-users",
+              "api-reference/users/get-user"
+            ]
+          },
+          {
+            "group": "Referrals",
+            "pages": [
+              "api-reference/referrals/list-referrals",
+              "api-reference/referrals/create-referral",
+              "api-reference/referrals/get-referral",
+              "api-reference/referrals/update-referral"
+            ]
+          },
+          {
+            "group": "Posters",
+            "pages": [
+              "api-reference/posters/list-posters",
+              "api-reference/posters/get-poster"
+            ]
+          },
+          {
+            "group": "Impressions",
+            "pages": [
+              "api-reference/impressions/list-impressions",
+              "api-reference/impressions/get-impression"
+            ]
+          },
+          {
+            "group": "Earnings",
+            "pages": [
+              "api-reference/earnings/list-earnings",
+              "api-reference/earnings/create-earning",
+              "api-reference/earnings/get-earning",
+              "api-reference/earnings/update-earning"
             ]
           }
         ]

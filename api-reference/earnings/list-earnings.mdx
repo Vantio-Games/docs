@@ -1,0 +1,310 @@
+---
+title: 'List Earnings'
+openapi: 'GET /api/v1/earnings'
+---
+
+Retrieve a list of all earnings from your programs. This endpoint helps you track commissions, monitor payout status, and analyze earnings performance across programs and ambassadors.
+
+## Overview
+
+The List Earnings endpoint returns a paginated list of all earnings created when referred customers spend money on your platform. Use this endpoint to:
+
+- Track all earnings across programs
+- Monitor earnings by referral or program
+- Filter earnings by status (pending, processing, paid, failed)
+- Build earnings dashboards and reports
+- Calculate total commissions owed to ambassadors
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token in the Authorization header:
+
+```bash
+Authorization: Bearer sk_your_secret_key_here
+```
+
+## Query Parameters
+
+<ParamField body="referral_id" type="string" required={false}>
+  Filter results to only include earnings from a specific referral. Useful when tracking earnings for a particular signup.
+  
+  **Example:** `referral_id=ref_123abc`
+</ParamField>
+
+<ParamField body="program_id" type="string" required={false}>
+  Filter results to only include earnings from a specific program. Useful when analyzing earnings for individual programs.
+  
+  **Example:** `program_id=prog_123abc`
+</ParamField>
+
+<ParamField body="status" type="string" required={false}>
+  Filter earnings by their current status. Valid values are:
+  - `pending` - Earning created but not yet processed
+  - `processing` - Earning is being processed for payout
+  - `paid` - Earning has been paid out
+  - `failed` - Earning payment failed
+  
+  **Example:** `status=paid` returns only paid earnings
+</ParamField>
+
+<ParamField body="limit" type="integer" default="50" required={false}>
+  Maximum number of results to return per page. Default is 50, maximum is typically 100.
+  
+  **Example:** `limit=25`
+</ParamField>
+
+<ParamField body="offset" type="integer" default="0" required={false}>
+  Number of results to skip before starting to return results. Use for pagination.
+  
+  **Example:** `offset=50` skips the first 50 results
+</ParamField>
+
+## Request Example
+
+<RequestExample>
+
+```bash
+# Get all earnings
+curl -X GET "http://localhost:3000/api/v1/earnings" \
+  -H "Authorization: Bearer sk_your_secret_key_here"
+
+# Get paid earnings from a specific program
+curl -X GET "http://localhost:3000/api/v1/earnings?program_id=prog_123abc&status=paid&limit=100" \
+  -H "Authorization: Bearer sk_your_secret_key_here"
+
+# Get earnings for a specific referral
+curl -X GET "http://localhost:3000/api/v1/earnings?referral_id=ref_123abc" \
+  -H "Authorization: Bearer sk_your_secret_key_here"
+```
+
+</RequestExample>
+
+## Response
+
+The API returns a JSON object containing an array of earning objects:
+
+<ResponseField name="earnings" type="array" required>
+  Array of earning objects, each containing information about a commission or payout.
+</ResponseField>
+
+Each earning object contains:
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the earning.
+</ResponseField>
+
+<ResponseField name="referral_id" type="string" required>
+  ID of the referral that generated this earning.
+</ResponseField>
+
+<ResponseField name="amount" type="number" required>
+  Amount in cents (e.g., 1000 = $10.00).
+</ResponseField>
+
+<ResponseField name="currency" type="string" required>
+  Currency code (ISO 4217 format, e.g., "USD", "EUR").
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  Type of earning (e.g., "purchase", "subscription", "recurring").
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Description of the earning.
+</ResponseField>
+
+<ResponseField name="status" type="string" required>
+  Current status: `pending`, `processing`, `paid`, or `failed`.
+</ResponseField>
+
+<ResponseField name="reference_id" type="string">
+  External reference (e.g., Stripe payout ID, transaction ID).
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp of when the earning was created.
+</ResponseField>
+
+<ResponseField name="paid_at" type="string">
+  ISO 8601 timestamp of when the earning was paid out, if applicable.
+</ResponseField>
+
+<ResponseField name="metadata" type="object">
+  Additional metadata about the earning.
+</ResponseField>
+
+## Response Example
+
+<ResponseExample>
+
+```json
+{
+  "earnings": [
+    {
+      "id": "earn_123abc",
+      "referral_id": "ref_123abc",
+      "amount": 1000,
+      "currency": "USD",
+      "type": "purchase",
+      "description": "Commission from customer purchase",
+      "status": "paid",
+      "reference_id": "payout_456def",
+      "created_at": "2024-01-15T10:30:00Z",
+      "paid_at": "2024-01-20T14:20:00Z",
+      "metadata": {
+        "order_id": "order_789",
+        "commission_rate": "10%"
+      }
+    },
+    {
+      "id": "earn_456def",
+      "referral_id": "ref_789ghi",
+      "amount": 500,
+      "currency": "USD",
+      "type": "subscription",
+      "description": "Monthly subscription commission",
+      "status": "pending",
+      "reference_id": null,
+      "created_at": "2024-01-17T09:15:00Z",
+      "paid_at": null,
+      "metadata": {
+        "subscription_id": "sub_123",
+        "commission_rate": "5%"
+      }
+    }
+  ]
+}
+```
+
+</ResponseExample>
+
+## Use Cases
+
+### Building an Earnings Dashboard
+
+Fetch all earnings and display them in a dashboard:
+
+```javascript
+async function fetchEarnings(filters = {}) {
+  const params = new URLSearchParams();
+  
+  if (filters.referralId) params.append('referral_id', filters.referralId);
+  if (filters.programId) params.append('program_id', filters.programId);
+  if (filters.status) params.append('status', filters.status);
+  if (filters.limit) params.append('limit', filters.limit);
+  if (filters.offset) params.append('offset', filters.offset);
+  
+  const response = await fetch(
+    `http://localhost:3000/api/v1/earnings?${params.toString()}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`
+      }
+    }
+  );
+  
+  return await response.json();
+}
+```
+
+### Calculating Total Earnings
+
+Calculate total earnings for a program or ambassador:
+
+```javascript
+async function calculateTotalEarnings(programId, status = 'paid') {
+  const earnings = await fetchEarnings({ programId, status, limit: 1000 });
+  
+  const total = earnings.earnings.reduce((sum, earning) => {
+    return sum + earning.amount;
+  }, 0);
+  
+  // Convert from cents to dollars
+  return total / 100;
+}
+```
+
+### Tracking Pending Payouts
+
+Get all earnings that need to be paid out:
+
+```javascript
+async function getPendingPayouts(programId) {
+  const pending = await fetchEarnings({ 
+    programId, 
+    status: 'pending',
+    limit: 1000 
+  });
+  
+  const processing = await fetchEarnings({ 
+    programId, 
+    status: 'processing',
+    limit: 1000 
+  });
+  
+  return {
+    pending: pending.earnings,
+    processing: processing.earnings,
+    totalPending: pending.earnings.reduce((sum, e) => sum + e.amount, 0) / 100,
+    totalProcessing: processing.earnings.reduce((sum, e) => sum + e.amount, 0) / 100
+  };
+}
+```
+
+### Exporting Earnings Data
+
+Fetch all earnings for export:
+
+```javascript
+async function exportAllEarnings(programId) {
+  let allEarnings = [];
+  let offset = 0;
+  const limit = 100;
+  let hasMore = true;
+  
+  while (hasMore) {
+    const response = await fetch(
+      `http://localhost:3000/api/v1/earnings?program_id=${programId}&limit=${limit}&offset=${offset}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`
+        }
+      }
+    );
+    
+    const data = await response.json();
+    allEarnings = [...allEarnings, ...data.earnings];
+    
+    hasMore = data.earnings.length === limit;
+    offset += limit;
+  }
+  
+  return allEarnings;
+}
+```
+
+## Best Practices
+
+1. **Use filters effectively** - Combine filters to narrow results and improve performance
+2. **Implement pagination** - Always use `limit` and `offset` for large datasets
+3. **Track status changes** - Monitor earnings status to ensure timely payouts
+4. **Store reference IDs** - Use reference_id to link to external payment systems
+5. **Calculate totals carefully** - Remember amounts are in cents, convert to dollars for display
+
+## Error Responses
+
+<ResponseField name="401" type="object">
+  **Unauthorized** - Invalid or missing API key
+  
+  ```json
+  {
+    "error": "Unauthorized",
+    "message": "Invalid or missing API key"
+  }
+  ```
+</ResponseField>
+
+## Rate Limits
+
+This endpoint is subject to rate limiting. Check response headers for rate limit information.
+

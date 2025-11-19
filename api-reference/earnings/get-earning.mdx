@@ -1,0 +1,235 @@
+---
+title: 'Get Earning'
+openapi: 'GET /api/v1/earnings/{id}'
+---
+
+Retrieve detailed information about a specific earning by its unique ID. Use this endpoint to fetch complete earning details including amount, status, and associated referral.
+
+## Overview
+
+The Get Earning endpoint returns comprehensive information about a single earning. This is useful for:
+
+- Viewing earning details in dashboards
+- Checking earning status before processing payouts
+- Verifying earning information for customer support
+- Building earning detail pages
+- Tracking payout progress
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token in the Authorization header:
+
+```bash
+Authorization: Bearer sk_your_secret_key_here
+```
+
+## Path Parameters
+
+<ParamField body="id" type="string" required>
+  The unique identifier of the earning you want to retrieve. This ID is returned when you create an earning or list earnings.
+  
+  **Example:** `earn_123abc`
+</ParamField>
+
+## Request Example
+
+<RequestExample>
+
+```bash
+curl -X GET "http://localhost:3000/api/v1/earnings/earn_123abc" \
+  -H "Authorization: Bearer sk_your_secret_key_here"
+```
+
+</RequestExample>
+
+## Response
+
+The API returns a detailed earning object:
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the earning.
+</ResponseField>
+
+<ResponseField name="referral_id" type="string" required>
+  ID of the referral that generated this earning.
+</ResponseField>
+
+<ResponseField name="amount" type="number" required>
+  Amount in cents (e.g., 1000 = $10.00).
+</ResponseField>
+
+<ResponseField name="currency" type="string" required>
+  Currency code (ISO 4217 format).
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  Type of earning (e.g., "purchase", "subscription", "recurring").
+</ResponseField>
+
+<ResponseField name="description" type="string">
+  Description of the earning.
+</ResponseField>
+
+<ResponseField name="status" type="string" required>
+  Current status: `pending`, `processing`, `paid`, or `failed`.
+</ResponseField>
+
+<ResponseField name="reference_id" type="string">
+  External reference (e.g., Stripe payout ID, transaction ID).
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp of when the earning was created.
+</ResponseField>
+
+<ResponseField name="paid_at" type="string">
+  ISO 8601 timestamp of when the earning was paid out, if applicable.
+</ResponseField>
+
+<ResponseField name="metadata" type="object">
+  Additional metadata associated with the earning.
+</ResponseField>
+
+## Response Example
+
+<ResponseExample>
+
+```json
+{
+  "id": "earn_123abc",
+  "referral_id": "ref_123abc",
+  "amount": 1000,
+  "currency": "USD",
+  "type": "purchase",
+  "description": "Commission from customer purchase - Order #12345",
+  "status": "paid",
+  "reference_id": "payout_456def",
+  "created_at": "2024-01-15T10:30:00Z",
+  "paid_at": "2024-01-20T14:20:00Z",
+  "metadata": {
+    "order_id": "order_12345",
+    "commission_rate": "10%"
+  }
+}
+```
+
+</ResponseExample>
+
+## Error Responses
+
+<ResponseField name="401" type="object">
+  **Unauthorized** - Invalid or missing API key
+  
+  ```json
+  {
+    "error": "Unauthorized",
+    "message": "Invalid or missing API key"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="404" type="object">
+  **Not Found** - The earning with the specified ID does not exist
+  
+  ```json
+  {
+    "error": "Not Found",
+    "message": "Earning not found"
+  }
+  ```
+</ResponseField>
+
+## Use Cases
+
+### Checking Earning Status
+
+Before processing a payout, verify the earning status:
+
+```javascript
+async function checkEarningStatus(earningId) {
+  const response = await fetch(
+    `http://localhost:3000/api/v1/earnings/${earningId}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`
+      }
+    }
+  );
+  
+  if (response.status === 404) {
+    throw new Error('Earning not found');
+  }
+  
+  const earning = await response.json();
+  return earning.status; // 'pending', 'processing', 'paid', or 'failed'
+}
+```
+
+### Building Earning Detail View
+
+Display complete earning information:
+
+```javascript
+async function EarningDetail({ earningId }) {
+  const [earning, setEarning] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    async function fetchEarning() {
+      try {
+        const response = await fetch(
+          `http://localhost:3000/api/v1/earnings/${earningId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${API_KEY}`
+            }
+          }
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          setEarning(data);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchEarning();
+  }, [earningId]);
+  
+  if (loading) return <div>Loading...</div>;
+  if (!earning) return <div>Earning not found</div>;
+  
+  const amountInDollars = (earning.amount / 100).toFixed(2);
+  
+  return (
+    <div>
+      <h1>Earning Details</h1>
+      <p>Amount: ${amountInDollars} {earning.currency}</p>
+      <p>Status: {earning.status}</p>
+      <p>Type: {earning.type || 'N/A'}</p>
+      <p>Description: {earning.description || 'N/A'}</p>
+      <p>Created: {new Date(earning.created_at).toLocaleDateString()}</p>
+      {earning.paid_at && (
+        <p>Paid: {new Date(earning.paid_at).toLocaleDateString()}</p>
+      )}
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+1. **Cache earning data** - Earning information doesn't change frequently
+2. **Handle 404 errors** - Always check if the earning exists
+3. **Convert amounts for display** - Remember amounts are in cents
+4. **Monitor status changes** - Use webhooks or polling to track status updates
+5. **Link to referrals** - Use referral_id to fetch related referral information
+
+## Rate Limits
+
+This endpoint is subject to rate limiting. Check response headers for rate limit information.
+

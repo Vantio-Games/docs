@@ -1,0 +1,316 @@
+---
+title: 'Create Referral'
+openapi: 'POST /api/v1/referrals'
+---
+
+Create a new referral when someone signs up via a referral link. This endpoint is typically called when a user completes signup after scanning a QR code from an ambassador poster.
+
+## Overview
+
+The Create Referral endpoint allows you to register a new referral signup in your system. This is a critical endpoint that links:
+
+- The impression (QR scan) that initiated the referral
+- The person who signed up (referral)
+- The student ambassador who generated the referral
+- The program the referral belongs to
+
+Use this endpoint to:
+
+- Register new signups from referral links
+- Track the conversion funnel from QR scan to signup
+- Associate referrals with their originating impressions
+- Enable commission tracking for ambassadors
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token in the Authorization header:
+
+```bash
+Authorization: Bearer sk_your_secret_key_here
+```
+
+## Request Body
+
+<ParamField body="impression_id" type="string" required>
+  **Required.** The ID of the impression (QR scan) that led to this referral. This links the referral back to the original QR code scan and poster placement.
+  
+  **Example:** `imp_123abc`
+  
+  **Note:** The impression must exist in your system before creating a referral.
+</ParamField>
+
+<ParamField body="first_name" type="string" required>
+  **Required.** First name of the person who signed up via the referral link.
+  
+  **Example:** `John`
+</ParamField>
+
+<ParamField body="last_name" type="string" required>
+  **Required.** Last name of the person who signed up via the referral link.
+  
+  **Example:** `Doe`
+</ParamField>
+
+<ParamField body="email" type="string" required>
+  **Required.** Email address of the referred person. This should be a valid email address and is used for communication and verification.
+  
+  **Example:** `john.doe@example.com`
+</ParamField>
+
+<ParamField body="profile_picture" type="string" required={false}>
+  Optional URL to the profile picture of the referred person. This can be used to display avatars in dashboards.
+  
+  **Example:** `https://example.com/profiles/john-doe.jpg`
+</ParamField>
+
+<ParamField body="metadata" type="object" required={false}>
+  Optional additional metadata about the referral. Use this to store custom information like signup source, marketing campaign, or other relevant data.
+  
+  **Example:**
+  ```json
+  {
+    "source": "poster_qr_code",
+    "location": "campus_center",
+    "campaign": "spring_2024"
+  }
+  ```
+</ParamField>
+
+<ParamField body="idempotency_key" type="string" required={false}>
+  Optional unique key for idempotent requests. If you send the same `idempotency_key` within a short time window, the API will return the same referral instead of creating a duplicate. This is useful for retry logic.
+  
+  **Example:** `idemp_20240115_123456`
+  
+  **Best Practice:** Use a combination of timestamp and unique identifier to ensure uniqueness.
+</ParamField>
+
+## Request Example
+
+<RequestExample>
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/referrals" \
+  -H "Authorization: Bearer sk_your_secret_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "impression_id": "imp_123abc",
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john.doe@example.com",
+    "profile_picture": "https://example.com/profiles/john-doe.jpg",
+    "metadata": {
+      "source": "poster_qr_code",
+      "location": "campus_center"
+    },
+    "idempotency_key": "ref_20240115_123456"
+  }'
+```
+
+</RequestExample>
+
+## Response
+
+On success, the API returns the created referral object:
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the newly created referral.
+</ResponseField>
+
+<ResponseField name="impression_id" type="string" required>
+  The impression ID that was provided in the request.
+</ResponseField>
+
+<ResponseField name="first_name" type="string" required>
+  First name of the referral.
+</ResponseField>
+
+<ResponseField name="last_name" type="string" required>
+  Last name of the referral.
+</ResponseField>
+
+<ResponseField name="email" type="string" required>
+  Email address of the referral.
+</ResponseField>
+
+<ResponseField name="status" type="string" required>
+  Initial status of the referral, typically `pending`.
+</ResponseField>
+
+<ResponseField name="program_id" type="string" required>
+  ID of the program, automatically determined from the impression.
+</ResponseField>
+
+<ResponseField name="student_id" type="string" required>
+  ID of the student ambassador, automatically determined from the impression.
+</ResponseField>
+
+<ResponseField name="created_at" type="string" required>
+  ISO 8601 timestamp of when the referral was created.
+</ResponseField>
+
+## Response Example
+
+<ResponseExample>
+
+```json
+{
+  "id": "ref_789ghi",
+  "impression_id": "imp_123abc",
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john.doe@example.com",
+  "profile_picture": "https://example.com/profiles/john-doe.jpg",
+  "status": "pending",
+  "program_id": "prog_123abc",
+  "student_id": "user_123abc",
+  "created_at": "2024-01-15T10:30:00Z",
+  "metadata": {
+    "source": "poster_qr_code",
+    "location": "campus_center"
+  }
+}
+```
+
+</ResponseExample>
+
+## Error Responses
+
+<ResponseField name="400" type="object">
+  **Bad Request** - Invalid request data
+  
+  ```json
+  {
+    "error": "Bad Request",
+    "message": "Missing required field: impression_id"
+  }
+  ```
+  
+  Common causes:
+  - Missing required fields
+  - Invalid email format
+  - Invalid impression_id (impression doesn't exist)
+</ResponseField>
+
+<ResponseField name="401" type="object">
+  **Unauthorized** - Invalid or missing API key
+  
+  ```json
+  {
+    "error": "Unauthorized",
+    "message": "Invalid or missing API key"
+  }
+  ```
+</ResponseField>
+
+## Use Cases
+
+### Handling Signup Webhooks
+
+When a user signs up via a referral link, create the referral:
+
+```javascript
+async function handleSignupWebhook(signupData, impressionId) {
+  try {
+    const response = await fetch('http://localhost:3000/api/v1/referrals', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        impression_id: impressionId,
+        first_name: signupData.firstName,
+        last_name: signupData.lastName,
+        email: signupData.email,
+        profile_picture: signupData.profilePicture,
+        metadata: {
+          source: 'web_signup',
+          signup_method: 'email'
+        },
+        idempotency_key: `signup_${signupData.userId}_${Date.now()}`
+      })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message);
+    }
+    
+    const referral = await response.json();
+    console.log('Referral created:', referral.id);
+    return referral;
+  } catch (error) {
+    console.error('Error creating referral:', error);
+    throw error;
+  }
+}
+```
+
+### Idempotent Referral Creation
+
+Use idempotency keys to prevent duplicate referrals:
+
+```javascript
+async function createReferralSafely(referralData, userId) {
+  const idempotencyKey = `ref_${userId}_${referralData.impression_id}`;
+  
+  const response = await fetch('http://localhost:3000/api/v1/referrals', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      ...referralData,
+      idempotency_key: idempotencyKey
+    })
+  });
+  
+  // If the referral already exists (idempotent), the API returns the existing one
+  return await response.json();
+}
+```
+
+### Batch Referral Creation
+
+Create multiple referrals in sequence:
+
+```javascript
+async function createReferralsBatch(referralsData) {
+  const results = [];
+  
+  for (const referralData of referralsData) {
+    try {
+      const referral = await createReferralSafely(referralData, referralData.userId);
+      results.push({ success: true, referral });
+    } catch (error) {
+      results.push({ success: false, error: error.message });
+    }
+  }
+  
+  return results;
+}
+```
+
+## Best Practices
+
+1. **Always use idempotency keys** - Prevents duplicate referrals if your request is retried
+2. **Validate impression_id** - Ensure the impression exists before creating the referral
+3. **Store metadata** - Use the metadata field to track useful information for analytics
+4. **Handle errors gracefully** - Check for 400 errors and provide user-friendly messages
+5. **Verify email format** - Validate email addresses before sending to the API
+6. **Link to impressions** - Always provide a valid `impression_id` to maintain the referral chain
+
+## Workflow
+
+The typical referral creation workflow:
+
+1. User scans QR code → **Impression created**
+2. User clicks through and signs up → **Referral created** (this endpoint)
+3. User makes a purchase → **Earning created** (see Earnings API)
+4. Referral status updated to `converted`
+
+## Rate Limits
+
+This endpoint is subject to rate limiting. Check response headers for rate limit information.
+
